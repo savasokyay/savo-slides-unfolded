@@ -1,0 +1,65 @@
+/* WP-14: the card and the cover (D-061, D-063 to D-066, D-071). Geometry is the A+B cover v5 of the prototype (prototypes/directions/index.html, `.d-b.d-mix.k-cover`),
+   measured in runs/2610221919-ui-cover-v4/ and re-measured on this stylesheet in runs/2610222139-ui-cover-impl/. Colours are tokens only (no literal, tests/js/chrome-css.test.mjs):
+   --card and --info-band (the PAGE theme's surfaces), the dark set's --ink --ink-soft --title --chrome --section --kicker --key-band (switched on by the wrapper
+   [data-surface="dark"], plan section 12, 2026-10-22 21:16), --emblem-ground, and --qr-ground (white, both themes: a QR needs its light ground and its quiet zone; new in WP-14).
+   Fonts: --f-title (Archivo) for the display texts, --f-cover-title with --f-cover-title-stretch for the top title, --f-body (Source Sans 3) for the rest.
+   Units: stage pixels. The cover reuses .savo-emblem (92 px white disc, 84 px emblem) from chrome.css. */
+
+.savo-card, .savo-card * { box-sizing: border-box; }
+/* the card: the page theme's `card` colour; it has no [data-surface] itself (the wrapper inside has) */
+.savo-card { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; margin: 0; overflow: hidden; isolation: isolate; background: var(--card); }
+/* The wrapper switches the dark token set on and has no box of its own: its children are laid out and stacked in the card, so the band (which follows the
+   page theme, not the dark set) can sit between the network and the text. Custom properties and `color` inherit through a `display: contents` element. */
+.savo-card-body { display: contents; color: var(--ink); font-family: var(--f-body); }
+:where(.savo-card h1, .savo-card p) { margin: 0; }          /* :where keeps the specificity at zero, so the margins set below win */
+
+/* layers: network and faint S (0), band (1), text (2) */
+.savo-net { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; z-index: 0; pointer-events: none; }
+.savo-net-lines { stroke: color-mix(in srgb, var(--chrome) 13%, transparent); stroke-width: 1.5; }   /* the prototype's rgba(198,208,242,.13): the dark chrome at 13 % */
+.savo-net-dots { fill: color-mix(in srgb, var(--key-band) 30%, transparent); }                       /* rgba(242,194,48,.30): the dark gold band colour at 30 % */
+.savo-card .savo-watermark { z-index: 0; opacity: .08; }
+.savo-card .savo-watermark[data-pos="right"] { left: auto; right: 30px; top: 0; height: 800px; transform: none; }
+.savo-card .savo-watermark[data-pos="center"] { left: 50%; top: 40%; height: 760px; transform: translate(-50%, -50%); }
+.savo-band { position: absolute; left: 0; right: 0; bottom: 0; height: 290px; z-index: 1; background: var(--info-band); }
+
+/* ---------- cover ---------- */
+.savo-cover-bar, .savo-cover-mid, .savo-qr-group, .savo-stamp { z-index: 2; }
+/* the emblem and the institution: the content slides' top strip (left 60, top 26, height 112, 4 px padding, a 1 px rule that is not drawn here) */
+.savo-cover-bar {
+  position: absolute; left: 60px; right: 60px; top: 26px; height: 112px; padding-bottom: 4px; border-bottom: 1px solid transparent;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.savo-cover-lockup { display: flex; align-items: center; gap: 24px; }
+.savo-institution { font: 600 22px/1.32 var(--f-body); color: var(--chrome); white-space: nowrap; }
+.savo-institution .savo-line, .savo-url .savo-line { display: block; }
+
+/* the middle block is centred between the bottom edge of the emblem (33.5 + 92 = 125.5) and the top edge of the band (290 px), whatever the language (user, 2026-10-22 19:3x) */
+.savo-cover-mid { position: absolute; left: 0; right: 0; top: 125.5px; bottom: 290px; display: flex; flex-direction: column; justify-content: center; gap: 32px; }
+.savo-cover-course { margin-left: 112px; display: flex; flex-direction: column; gap: 8px; }
+.savo-cover-code { font: 500 24px/1 var(--f-title); color: var(--chrome); letter-spacing: .04em; font-variant-numeric: tabular-nums; }   /* the chrome tone: the soft ink drops to 4.2:1 on the lit network (WP-04) */
+.savo-cover-course-name { font: 600 34px/1.1 var(--f-title); color: var(--section); }
+.savo-cover-titles { margin-left: 104px; }
+.savo-cover-topic { font-family: var(--f-cover-title); font-stretch: var(--f-cover-title-stretch); font-weight: 700; font-size: 150px; line-height: .9; letter-spacing: -.035em; color: var(--kicker); }
+.savo-cover-title { font-family: var(--f-title); font-weight: 600; font-size: 62px; line-height: 1.1; letter-spacing: -.012em; color: var(--title); margin-top: 24px; padding-left: 7px; }   /* 7 px: the subtitle's first letter sat 7 px left of the topic's stem (measured) */
+.savo-cover-subtitle { font: 400 30px var(--f-body); color: var(--chrome); margin-left: 12px; letter-spacing: 0; }
+/* no topic (lead decision, 21:37; the plain cover of D-102 is this card): the title takes the topic's slot, in the topic's type; it may run to `--fit-lines` lines, balanced, and the subtitle takes the title's slot.
+   WP-49: the build reads this rule and the ones listed in engine/README.md (tests/js/css-fit-contract.test.mjs holds their shape) to check that a text fits. `--fit-lines` is how many lines of this title fit
+   between the emblem and the information band when the line under it is one line (a fourth line runs into both; tests/js/harness-run.mjs k36 holds the number to the measured layout). It draws nothing. */
+.savo-cover-title[data-slot="big"] { font-family: var(--f-cover-title); font-stretch: var(--f-cover-title-stretch); font-weight: 700; font-size: 150px; line-height: .9; letter-spacing: -.035em; color: var(--kicker); margin-top: 0; padding-left: 0; max-width: 1700px; text-wrap: balance; --fit-lines: 3; }
+.savo-cover-subline { font-family: var(--f-title); font-weight: 600; font-size: 62px; line-height: 1.1; letter-spacing: -.012em; color: var(--title); margin-top: 24px; }
+
+/* the band: each QR beside the text it belongs to (D-061). The tile is 240 px white; the e-mail image sits 37/41 wide in it (the user's PNG keeps ~2 modules of its own,
+   so the quiet zone is 4 modules and the image itself is untouched, D-066); the deck QR is an SVG that carries its own quiet zone */
+.savo-qr-group { position: absolute; bottom: 36px; display: flex; align-items: center; gap: 30px; }
+.savo-qr-mail { left: 110px; }
+.savo-qr-deck { right: 110px; flex-direction: row-reverse; text-align: right; }
+.savo-qr-tile { flex: none; width: 240px; height: 240px; border-radius: 16px; overflow: hidden; background: var(--qr-ground); display: grid; place-items: center; }
+.savo-qr-tile img, .savo-qr-svg { display: block; width: 100%; height: 100%; }
+/* D-078 (user, 2026-10-22 21:57): the deck QR's dark modules are the information band's colour, the PAGE theme's (light page #1A2363, dark page #111843: --info-band is not in the dark set);
+   the white behind them is the tile's --qr-ground. The gold S in the cut-out is the mark file drawn by an <image> (qr.js). It is inline for this reason: an SVG in an <img> cannot read a CSS variable. */
+.savo-qr-modules { fill: var(--info-band); }
+.savo-qr-mail .savo-qr-tile img { width: calc(100% * 37 / 41); height: calc(100% * 37 / 41); }
+.savo-who { font: 600 38px/1.15 var(--f-title); color: var(--ink); }
+.savo-mail { font: 400 26px/1.3 var(--f-body); color: var(--ink-soft); margin-top: 4px; }
+.savo-url { font: 600 24px/1.38 var(--f-body); color: var(--ink-soft); }
+.savo-stamp { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); font: 400 14px/1.3 var(--f-body); color: var(--ink-soft); opacity: .8; text-align: center; white-space: nowrap; }

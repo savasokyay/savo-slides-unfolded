@@ -1,0 +1,104 @@
+/* WP-12b / D-050, D-068, D-073: how the student build's controls look and when they show. Behaviour is WP-12c's; this file is the look and the reveal.
+   The controls are outside the scaled stage, so their sizes are real CSS pixels (a 36 px target stays 36 px on every window), not stage pixels.
+   The segment is the pill of D-050 repainted from the page tokens instead of a navy strip: a tinted track, the chosen option an inverted pill
+   (--title on --ground: 10.7:1 in the light theme, 14.9:1 in the dark one) with bold text. Colours: tokens and color-mix() of tokens only.
+
+   D-073: the controls are a column at the right edge ("rail"), HIDDEN by default. Structure: .savo-controls is the place and the hit zone,
+   .savo-panel inside it is what is drawn. The panel is revealed (opacity 1) when
+     - the pointer is over the zone (:hover on .savo-controls: the right-hand strip of the window, 56 px wide, full height, where the stage keeps
+       its side margin empty; on a touch screen a tap on it gives the emulated :hover);
+     - a control inside has keyboard focus (:focus-within). The panel is only transparent, never display:none or visibility:hidden, so Tab reaches
+       the hidden buttons and the first focus reveals the whole column;
+     - the caller sets data-open="true" on .savo-controls (WP-12c: a tap on a touch screen, and closing it again).
+   and it is hidden again when none of the three holds. The change takes 120 ms (a CSS transition on opacity); with prefers-reduced-motion it is instant.
+   The controls must stay OUTSIDE the deck root (the stage host): a running CSS transition inside it would count as one of the engine's own animations.
+   The "strip" placement (a bar at the top right, same reveal) stays for the options page (engine/chrome/options.html).
+   --surround is the colour around the stage in the student build (requested token; the audience window stays #000 in its own page). */
+
+.savo-student { position: fixed; inset: 0; margin: 0; overflow: hidden; background: var(--surround, var(--ground)); }
+
+.savo-controls { margin: 0; z-index: 20; font: 600 14px/1 var(--f-body); color: var(--ink); }
+.savo-panel {
+  display: flex; align-items: center; gap: 10px; opacity: 0; transition: opacity 120ms ease-out;
+  background: color-mix(in srgb, var(--ground) 88%, var(--ink));      /* a filled, slightly deeper surface instead of an outline (the controls may overlap the slide) */
+}
+.savo-controls:hover .savo-panel, .savo-controls:focus-within .savo-panel, .savo-controls[data-open="true"] .savo-panel { opacity: 1; }
+
+/* rail (D-073): a transparent full-height zone at the right edge, the panel centred in it */
+.savo-controls[data-placement="rail"] { position: fixed; top: 0; right: 0; bottom: 0; width: 56px; display: flex; align-items: center; justify-content: center; }
+.savo-controls[data-placement="rail"] .savo-panel { flex-direction: column; gap: 8px; padding: 6px 4px; border-radius: 22px; }
+.savo-controls[data-placement="rail"] .savo-seg { flex-direction: column; border-radius: 20px; }
+
+/* strip: the bar at the top right; the zone is the bar itself */
+.savo-controls[data-placement="strip"] { position: fixed; top: 0; right: 0; }
+.savo-controls[data-placement="strip"] .savo-panel { padding: 8px 12px; border-radius: 0 0 0 14px; }
+
+.savo-seg { display: inline-flex; padding: 2px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 12%, transparent); }
+.savo-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 36px; min-height: 36px; padding: 0 12px; margin: 0;
+  border: 0; border-radius: 999px; background: transparent; color: var(--ink); font: inherit; cursor: pointer;
+}
+.savo-btn[aria-pressed="true"] { background: var(--title); color: var(--ground); font-weight: 800; }
+.savo-btn:focus-visible { outline: 3px solid var(--section); outline-offset: 2px; }
+.savo-btn-text { letter-spacing: .03em; }
+.savo-icon { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* WP-59 (D-142, the user's choices of 2026-10-27): the student page on a touch screen, and the controls' new parts.
+   - touch-action: one finger belongs to core/touch.js (tap zones, swipes) and two to the browser (pinch zoom); once the reader has zoomed in
+     (core/touch.js writes data-savo-zoomed on <html>) one finger pans the zoomed page. Double-tap zoom is off in both (only `auto` has it): two quick
+     taps are two presses. The controls take `manipulation`, so quick presses on Next never zoom either.
+   - pinned (the pin button; the default on a touch screen): the panel is on screen whatever the pointer does.
+   - data-dock="band" (core/student-controls.js dockFor): the window leaves a band of 64 px or more under the slide (a phone held upright, a 4:3 screen),
+     and the controls are a centred row in it, 12 px under the slide, never over it; the zone is the strip of that row, the rest of the band is the page's.
+     "side" is D-073's column above; on a phone held sideways it stands in the side bar the stage leaves free (measured 2026-10-27: 73 px at 812 x 375,
+     the column is 56).
+   - the Back / Next pair: 44 px targets (a thumb; WCAG 2.5.5), last in the column and so the right-hand end of the row.
+   - small windows: the targets shrink so the column fits a phone held sideways (330 px high with the browser's bar) and the row a phone held upright
+     (360 px wide; under 340 px the row may wrap). */
+.savo-student { touch-action: pinch-zoom; }
+:root[data-savo-zoomed="true"] .savo-student { touch-action: manipulation; }
+.savo-controls { touch-action: manipulation; }
+/* pinned, the zone has nothing to reveal: only the panel takes events, and a touch beside it is the page's (a tap zone of core/touch.js) */
+.savo-controls[data-pinned="true"] { pointer-events: none; }
+.savo-controls[data-pinned="true"] .savo-panel { opacity: 1; pointer-events: auto; }
+.savo-seg-nav .savo-btn { min-width: 44px; min-height: 44px; padding: 0; }
+.savo-seg-nav .savo-icon { width: 22px; height: 22px; stroke-width: 2.5; }
+/* the band's zone is the strip that holds the row (12 px of air above and below it), not the whole band: under it a touch is the page's again */
+.savo-controls[data-placement="rail"][data-dock="band"] {
+  top: var(--dock-top); bottom: auto; left: 0; right: 0; width: auto; height: auto; max-height: var(--dock-height); box-sizing: border-box;
+  align-items: flex-start; padding: 12px 8px;
+}
+.savo-controls[data-placement="rail"][data-dock="band"] .savo-panel { flex-direction: row; flex-wrap: wrap; justify-content: center; padding: 4px 6px; }
+.savo-controls[data-placement="rail"][data-dock="band"] .savo-seg { flex-direction: row; }
+@media (max-height: 420px) {
+  .savo-controls[data-placement="rail"]:not([data-dock="band"]) .savo-panel { gap: 4px; padding: 4px 3px; }
+  .savo-controls[data-placement="rail"]:not([data-dock="band"]) .savo-btn { min-width: 32px; min-height: 32px; padding: 0 8px; }
+  .savo-controls[data-placement="rail"]:not([data-dock="band"]) .savo-seg-nav .savo-btn { min-width: 40px; min-height: 40px; padding: 0; }
+}
+@media (max-width: 400px) {
+  .savo-controls[data-dock="band"] .savo-panel { gap: 6px; }
+  .savo-controls[data-dock="band"] .savo-btn { min-width: 34px; min-height: 34px; padding: 0 6px; }
+  .savo-controls[data-dock="band"] .savo-seg-nav .savo-btn { min-width: 42px; min-height: 42px; padding: 0; }
+}
+
+/* WP-59 (D-142): the one-time hint of a touch screen (core/student-controls.js mountTouchHint): the tap zones of core/touch.js, the left 30 % and the
+   rest, over the page and under the controls, taking no events. A wash of the surround, dashed outlines and the arrows in the white of both themes
+   (--emblem-ground), the words on the panel's own surface. It fades in 260 ms when the first touch comes (outside the deck root: the lock never sees it). */
+.savo-hint {
+  position: fixed; inset: 0; z-index: 15; display: grid; grid-template-columns: 30% 70%; pointer-events: none;
+  background: color-mix(in srgb, var(--surround) 50%, transparent); font: 600 16px/1.2 var(--f-body); transition: opacity 260ms ease-out;
+}
+.savo-hint[data-gone="true"] { opacity: 0; }
+.savo-hint-zone {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; margin: 8px;
+  border: 2px dashed color-mix(in srgb, var(--emblem-ground) 60%, transparent); border-radius: 16px;
+}
+.savo-hint .savo-icon { width: 30px; height: 30px; stroke-width: 2.5; color: var(--emblem-ground); }
+.savo-hint-text, .savo-hint-small { padding: 6px 14px; border-radius: 999px; background: color-mix(in srgb, var(--ground) 92%, var(--ink)); color: var(--ink); }
+.savo-hint-small { padding: 4px 10px; font-size: 13px; }
+
+/* reduced motion: the reveal is instant */
+@media (prefers-reduced-motion: reduce) {
+  .savo-panel { transition: none; }
+  .savo-hint { transition: none; }
+}

@@ -1,0 +1,386 @@
+/* WP-20: the look of the story widgets (engine/widgets: tree-grow, table-highlight, pipeline, compare), moved here from prototypes/story-widgets/story.css after the visual acceptance
+   there (brief 04 and the storyboard modes, 2026-10-25). Rules: tokens only, no colour literal (the build writes the tokens into <style id="savo-theme">); units are stage pixels
+   (a widget draws a box of 1680 x 600 and scales it once to the room it is given, widgets/frames.js `fit`); the semantic roles of text are engine/css/roles.css ([data-role]).
+   Prefixes: .pg pictures (widgets/pictos.js), .tg tree-grow, .th and .mx table-highlight (blend, matrix and mnar modes), .pl and .sw pipeline (cascade, switch), .cp compare, .fm compare (families), .ps table-highlight (pseudo), .cv chart-draw (vote).
+   Motion is not here: it is the Plan a widget returns, opacity and transform only (D-039); the colour of a thing that changes is a crossfade of two layers.
+   Never write `color` on an element that carries [data-role]: roles.css would lose at equal specificity (measured, 2026-10-25). */
+.w-root{position:absolute;left:0;top:0;transform-origin:0 0}
+.w-root [data-role]{font-weight:600}
+
+/* ---------- pictures (pictos.js): strokes and fills in currentColor, so a picture takes the colour of its place ---------- */
+.pg{display:block;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;overflow:visible}
+.pg .f{fill:currentColor;stroke:none}
+.pg .g{fill:var(--ground)}
+.pg .t{stroke:var(--todo)}
+.pg .p{fill:var(--todo);stroke:none}
+.pg .d{stroke-dasharray:3 5}
+.pg-emblem .f{fill:currentColor}
+.pg-star-base{stroke:var(--todo);stroke-width:2}
+.pg-star-fill{stroke:none}
+.pg-poster{position:relative;display:grid;place-items:center;box-sizing:border-box;border:3px solid var(--ink-soft);border-radius:10px;background:color-mix(in srgb,var(--ink) 5%,var(--ground));color:var(--ink-soft)}
+.pg-mark{flex:none}
+
+/* ---------- tree-grow ---------- */
+.tg-edges{position:absolute;left:0;top:0;overflow:visible}
+/* pathLength=1: "1 2" is one dash the length of the path and a gap of two, so offset 1.02 hides the whole edge (a pattern of "1" restarts at the end and leaves a stub) */
+.tg-edge{fill:none;stroke:var(--ink-soft);stroke-width:4;stroke-linejoin:round;stroke-linecap:butt;stroke-dasharray:1 2}
+.tg-route{stroke:var(--emph);stroke-width:8}
+.tg-nodes{position:absolute;left:0;top:0;width:100%;height:100%}
+.tg-node{position:absolute;transform-origin:50% 0}
+.tg-layer{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;border:3px solid var(--ink-soft);border-radius:20px;padding:0 10px;font:600 28px/1.12 var(--f-body)}
+.tg-base.root{background:var(--title);border-color:var(--title);color:var(--ground);font:600 34px/1.1 var(--f-title)}
+.tg-base.branch{background:var(--ground)}
+.tg-base.leaf{background:color-mix(in srgb,var(--term) 12%,var(--ground));border-color:var(--term)}
+/* the emphasis ring: a second, inner outline (not a shadow), so the frame is two strokes thick: the shape cue next to the colour */
+.tg-focus{background:color-mix(in srgb,var(--emph) 14%,var(--ground));border-color:var(--emph);outline:3px solid var(--emph);outline-offset:-6px}
+.tg-how{font:400 20px/1.2 var(--f-body);color:var(--ink-soft);text-align:center}
+.tg-focus .tg-how{color:var(--ink)}
+.tg-focus .pg{color:var(--emph)}
+.tg-layer.has-picto{flex-direction:column;gap:6px;padding:8px 10px}
+.tg-layer.has-picto .tg-lbl{font-size:26px;line-height:1.1}
+.tg-link{position:absolute}
+.tg-link svg{display:block;overflow:visible}
+.tg-dots{fill:none;stroke:var(--ink-soft);stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1 11}
+.tg-note{position:absolute;font:400 26px/1.25 var(--f-body);color:var(--ink-soft)}
+
+/* ---------- table-highlight ---------- */
+.th-band{position:absolute;border-radius:18px;background:color-mix(in srgb,var(--emph) 8%,var(--ground))}
+.th-head{position:absolute;text-align:right;font:600 30px/44px var(--f-body);color:var(--ink-soft);white-space:nowrap}
+.th-label{position:absolute;font:600 32px/70px var(--f-body);color:var(--ink);white-space:nowrap}
+.th-rowicon{position:absolute;color:var(--ink-soft)}
+/* no colour here: a cell's colour is its role's ([data-role], engine/css/roles.css); a class colour of equal specificity would win over it */
+.th-cell{position:absolute;text-align:right;font:600 40px/70px var(--f-body);font-variant-numeric:tabular-nums}
+.th-pred{position:absolute;display:flex;align-items:center;justify-content:space-between}
+.th-num{font:600 40px/1 var(--f-body);font-variant-numeric:tabular-nums;color:var(--ink)}
+.th-op{position:absolute;text-align:center;font:400 40px/70px var(--f-body);color:var(--ink-soft)}
+.th-bar{position:absolute;border-radius:4px;background:var(--ink-soft)}
+.th-bar.neg{background:var(--neg)}
+.th-zero{position:absolute;background:var(--ink-soft)}
+.th-scene{position:absolute}
+.th-scene .pg-icon{color:var(--ink-soft)}
+.th-scene .pg-toward{color:var(--ink-soft)}
+.th-poster{position:absolute;border:3px solid var(--ink-soft);border-radius:14px;background:color-mix(in srgb,var(--ink) 5%,var(--ground));color:var(--ink-soft)}
+.th-badge{position:absolute;left:-16px;top:-18px;padding:1px 12px;border-radius:999px;background:var(--ground);border:3px solid var(--key);font:700 22px/1.3 var(--f-body)}
+.th-note{position:absolute;font:600 26px/1.25 var(--f-body)}
+.th-rule{position:absolute;background:var(--ink-soft);transform-origin:0 50%}
+.th-total-label{position:absolute;font:700 40px/104px var(--f-body);white-space:nowrap}
+.th-sumw{position:absolute;text-align:right;font:600 40px/104px var(--f-body);color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.th-total{position:absolute;text-align:right;font:800 72px/104px var(--f-body);font-variant-numeric:tabular-nums}
+
+/* ---------- table-highlight, matrix modes (table-matrix.js) ---------- */
+.mx-cell{position:absolute;box-sizing:border-box;border:3px dashed var(--todo);border-radius:10px}
+.mx-cell.on{border:3px solid var(--ink-soft);background:var(--ground)}
+.mx-fill{position:absolute;inset:6px;border-radius:5px;background:var(--ink-soft)}
+.mx-obs{position:absolute;inset:-3px;box-sizing:border-box;border:3px solid var(--ink-soft);border-radius:10px;background:var(--ground)}
+.mx-glow{position:absolute;inset:-3px;border-radius:10px;background:var(--emph)}
+.mx-bar{position:absolute;left:8px;right:8px;bottom:7px;border-radius:4px;background:var(--ink-soft)}
+.mx-ring{position:absolute;inset:-10px;border-radius:14px;border:4px solid var(--emph)}
+.mx-dark{position:absolute;border-radius:14px;background:color-mix(in srgb,var(--ink) 22%,var(--ground))}
+.mx-veil{position:absolute;border-radius:14px;background:var(--ground)}
+.mx-user{position:absolute;color:var(--ink-soft)}
+.mx-ubadge{position:absolute}
+.mx-glowbox{position:absolute;border-radius:16px;background:color-mix(in srgb,var(--emph) 30%,var(--ground))}
+.mx-strip{position:absolute;border-radius:12px;background:color-mix(in srgb,var(--ink) 8%,var(--ground));color:var(--ink-soft)}
+.mx-strip .pg-emblem{position:absolute}
+.mx-req{position:absolute;color:var(--ink-soft)}
+.mx-card{position:absolute;box-sizing:border-box;padding:16px 18px;border-radius:20px;background:color-mix(in srgb,var(--ink) 5%,var(--ground));color:var(--ink-soft)}
+.mx-card-head{display:flex;align-items:center;gap:12px;height:60px;margin-bottom:10px}
+.mx-card-name{font:600 25px/1.1 var(--f-body);color:var(--ink);white-space:nowrap}
+.mx-src{position:relative;display:flex;align-items:center;gap:12px;height:72px}
+.mx-src-label{flex:1;font:400 22px/1.15 var(--f-body);color:var(--ink-soft)}
+.mx-eye{flex:none}
+.mx-eye-neg{position:absolute;right:0;top:16px;color:var(--neg)}
+.mx-card-note{margin-top:10px;font:600 24px/1.2 var(--f-body);color:var(--ink)}
+.mx-hist{position:absolute;border-radius:20px;background:color-mix(in srgb,var(--ink) 5%,var(--ground))}
+.mx-ref{position:absolute;box-sizing:border-box;border:3px dashed var(--ink-soft);border-radius:6px}
+.mx-hbar{position:absolute;border-radius:6px;background:var(--ink-soft)}
+.mx-hlab{position:absolute;display:flex;align-items:center;justify-content:center;gap:4px;font:600 24px/1 var(--f-body);color:var(--ink)}
+.mx-legend{position:absolute;display:flex;flex-direction:column;gap:6px;font:400 22px/1.2 var(--f-body);color:var(--ink-soft)}
+.mx-lg{display:flex;align-items:center;gap:10px}
+.mx-sw{display:inline-block;width:26px;height:18px;border-radius:4px;background:var(--ink-soft)}
+.mx-sw.ref{box-sizing:border-box;background:none;border:3px dashed var(--ink-soft)}
+.mx-wt,.mx-scr{position:absolute;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:10px;font:600 24px/1.2 var(--f-body);color:var(--ink);text-align:center}
+.mx-wt{padding:14px 10px;border-radius:20px;border:4px solid var(--emph);background:color-mix(in srgb,var(--emph) 14%,var(--ground))}
+.mx-wt .pg,.mx-scr .pg{color:var(--ink-soft)}
+.mx-hl{position:absolute;text-align:center;font:600 22px/1.2 var(--f-body)}
+.mx-bound{position:absolute;box-sizing:border-box;border:3px dashed var(--ink-soft);border-radius:22px}
+.mx-off{position:absolute;text-align:center;font:600 24px/1.2 var(--f-body);color:var(--ink-soft)}
+.mx-metric{position:absolute;display:flex;flex-direction:column;align-items:center;gap:8px;font:600 24px/1.15 var(--f-body);color:var(--ink);text-align:center}
+.mx-metric .pg{color:var(--ink-soft)}
+
+/* ---------- compare, lists mode (compare.js) ---------- */
+.cp-frame{position:absolute;border-radius:24px;background:color-mix(in srgb,var(--ink) 5%,var(--ground))}
+.cp-head{position:absolute;display:flex;align-items:center;gap:14px;font:600 30px/1.15 var(--f-body);color:var(--ink)}
+.cp-head .pg{color:var(--ink-soft)}
+.cp-film{position:absolute}
+.cp-line{position:absolute;height:14px;border-radius:7px;background:var(--ink-soft)}
+.cp-line.soft{background:var(--todo)}
+.cp-newring{position:absolute;box-sizing:border-box;border:5px solid var(--emph);border-radius:18px}
+.cp-ghost{position:absolute;box-sizing:border-box;display:flex;align-items:center;gap:16px;padding:0 20px;border:3px dashed var(--todo);border-radius:14px;font:600 24px/1.2 var(--f-body);color:var(--ink-soft)}
+.cp-ghost .pg{color:var(--ink-soft)}
+.cp-merge{position:absolute;color:var(--neg)}
+.cp-slash{position:absolute;left:-6px;top:33px;width:84px;height:6px;border-radius:3px;background:var(--neg);transform:rotate(-40deg)}
+
+/* ---------- pipeline, switch mode (pipeline-switch.js) ---------- */
+.sw-wires{position:absolute;left:0;top:0;overflow:visible}
+.sw-wire{fill:none;stroke-linejoin:round;stroke-linecap:butt}
+.sw-wire.plain{stroke:var(--todo);stroke-width:5}
+.sw-wire.pick{stroke:var(--emph);stroke-width:8;stroke-dasharray:1 2}
+.sw-user{position:absolute;box-sizing:border-box;border-radius:18px;background:color-mix(in srgb,var(--ink) 5%,var(--ground));color:var(--ink-soft)}
+.sw-user-label{position:absolute;left:14px;right:10px;bottom:8px;font:600 22px/1.2 var(--f-body);color:var(--ink)}
+.sw-pivot{position:absolute;border-radius:50%;background:var(--ink)}
+.sw-lever{position:absolute;border-radius:5px;background:var(--ink)}
+.sw-rule{position:absolute;font:600 24px/1.2 var(--f-body);color:var(--ink-soft)}
+.sw-way-label{position:absolute;text-align:center;font:600 22px/1.2 var(--f-body);color:var(--ink-soft)}
+.sw-box{position:absolute;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border:3px solid var(--ink-soft);border-radius:18px;background:color-mix(in srgb,var(--ink) 5%,var(--ground));font:600 26px/1.2 var(--f-body);color:var(--ink)}
+.sw-box .pg{color:var(--ink-soft)}
+.sw-ring{position:absolute;box-sizing:border-box;border:5px solid var(--emph);border-radius:24px}
+.sw-token{position:absolute;color:var(--ink);background:var(--ground);border-radius:50%}
+.sw-veil{position:absolute;background:var(--ground)}
+.sw-panel{position:absolute;box-sizing:border-box;border-radius:20px;background:color-mix(in srgb,var(--ink) 5%,var(--ground))}
+.sw-panel-head{display:flex;align-items:center;gap:12px;box-sizing:border-box;height:76px;padding:12px 16px;font:600 26px/1.2 var(--f-body);color:var(--ink)}
+.sw-panel-head .pg{color:var(--ink-soft)}
+.sw-model{position:absolute;display:grid;place-items:center;box-sizing:border-box;border:3px solid var(--ink-soft);border-radius:12px;font:700 28px/1 var(--f-body);color:var(--ink)}
+.sw-err{position:absolute;border-radius:5px;background:var(--ink-soft)}
+.sw-errnum{position:absolute;font:600 26px/1.2 var(--f-body);font-variant-numeric:tabular-nums;color:var(--ink)}
+.sw-wring{position:absolute;box-sizing:border-box;border:5px solid var(--emph);border-radius:16px}
+.sw-wring.neg{border-color:var(--neg)}
+.sw-verdict{position:absolute;display:flex;align-items:center;gap:12px;font:600 26px/1.2 var(--f-body)}
+
+/* ---------- pipeline ---------- */
+.pl-band{position:absolute;border-radius:28px;border:3px solid var(--todo);background:color-mix(in srgb,var(--ink) 5%,var(--ground))}
+.pl-head{position:absolute;font:600 28px/40px var(--f-body);color:var(--ink-soft);white-space:nowrap}
+.pl-head-c{text-align:center}.pl-head-r{text-align:right}.pl-head.small{font-size:24px}
+.pl-ph{position:absolute;border:3px dashed var(--todo);border-radius:12px}
+.pl-item{position:absolute}
+.pl-chip{position:absolute;left:0;top:0;width:84px;height:44px}
+.pl-layer{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border:3px solid var(--ink-soft);border-radius:12px;font:700 28px/1 var(--f-body)}
+.pl-layer{gap:6px;font-size:26px}
+.pl-keep{background:var(--ground);color:var(--ink)}
+.pl-drop{background:var(--ground);color:var(--ink-soft);border-style:dashed;border-color:var(--todo)}
+.pl-story{position:absolute}
+.pl-story .pg-icon{color:var(--ink-soft)}
+.pl-mini{position:absolute;width:64px;height:72px;border:3px solid var(--ink-soft);border-radius:8px;background:color-mix(in srgb,var(--ink) 5%,var(--ground));color:var(--ink-soft);display:grid;place-items:center}
+.pl-mini .pg-stars{color:var(--key)}
+.pl-strike{position:absolute;z-index:2;left:-8px;top:21px;width:100px;height:3px;background:var(--ink-soft);transform-origin:0 50%}
+.pl-pips{position:absolute;left:102px;top:13px;display:flex;gap:4px;transform-origin:0 50%}
+.pl-pips span{display:block;width:18px;height:18px;border-radius:4px}
+.pl-pips .on{background:var(--ink-soft)}
+.pl-pips .off{border:2px solid var(--todo)}
+.pl-fine{position:absolute;left:226px;top:0;width:74px;height:44px;text-align:right;font:600 28px/44px var(--f-body);font-variant-numeric:tabular-nums;color:var(--ink)}
+.pl-mark{position:absolute;left:306px;top:2px;width:40px;height:40px}
+.pl-icon{display:block;width:40px;height:40px;flex:none}
+.pl-icon path{stroke:currentColor}
+.pl-cut{position:absolute;background:var(--ink-soft);transform-origin:0 50%}
+.pl-cutl{position:absolute;font:600 22px/26px var(--f-body);color:var(--ink-soft)}
+.pl-bracket{position:absolute;border:4px solid var(--emph);border-left:0;border-radius:0 10px 10px 0;transform-origin:50% 0}
+.pl-verdict{position:absolute;display:flex;gap:16px;align-items:flex-start;font:600 30px/1.2 var(--f-body)}
+.pl-vtext{padding-top:4px}
+
+
+/* ---------- table-highlight, mode pseudo (WP-50, D-112; widgets/table-pseudo.js) ----------
+   A real rating is a dark filled cell with a light number; a pseudo-rating a light cell with a dashed purple frame and an italic purple number (purple = term, D-009; the frame and the italics are the
+   non-colour cue, D-068); an empty cell is the dashed frame of .mx-cell with a grey notch. The number of a pseudo cell carries data-role="term": no colour is written on it here. */
+.ps-real,.ps-pseudo{position:absolute;box-sizing:border-box;display:grid;place-items:center;border-radius:10px;font:600 34px/1 var(--f-body);font-variant-numeric:tabular-nums}
+.ps-real{background:var(--ink-soft);border:3px solid var(--ink-soft);color:var(--ground)}
+.ps-pseudo{background:color-mix(in srgb,var(--term) 14%,var(--ground));border:3px dashed var(--term);font-style:italic}
+.ps-notch{position:absolute;border-radius:3px;background:var(--todo)}
+.ps-band{position:absolute;border-radius:14px;background:color-mix(in srgb,var(--emph) 16%,var(--ground))}
+.ps-strip{position:absolute;width:520px;height:60px}
+.ps-arc{fill:none;stroke:var(--emph);stroke-width:6;stroke-linecap:round;stroke-dasharray:1 2}
+.ps-sim{position:absolute;font:600 28px/1.2 var(--f-body)}
+.ps-cf{position:absolute;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:12px;border-radius:20px;background:color-mix(in srgb,var(--ink) 5%,var(--ground));font:600 26px/1.15 var(--f-body);color:var(--ink);text-align:center}
+.ps-cf .pg{color:var(--ink-soft)}
+.ps-legend{position:absolute;display:flex;align-items:center;gap:12px;font:600 26px/1.2 var(--f-body);color:var(--ink-soft);white-space:nowrap}
+.ps-sw{display:block;width:34px;height:34px;box-sizing:border-box;border-radius:8px}
+.ps-sw-real{background:var(--ink-soft);border:3px solid var(--ink-soft)}
+.ps-sw-pseudo{background:color-mix(in srgb,var(--term) 14%,var(--ground));border:3px dashed var(--term)}
+.ps-wh{position:absolute;font:600 26px/1.2 var(--f-body);color:var(--ink-soft);white-space:nowrap}
+.ps-pair{position:absolute;left:0;top:0;width:100%;height:100%}
+.ps-counts{position:absolute;font:600 36px/60px var(--f-body);color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.ps-track{position:absolute;box-sizing:border-box;border:3px solid var(--ink-soft);border-radius:8px}
+.ps-bar{position:absolute;border-radius:4px;background:var(--emph)}
+
+
+/* ---------- compare, mode families (WP-50, D-112; widgets/compare-families.js) ----------
+   Every picture shows invented values, plainly an example, and carries no label (D-129). Markers, models and the second-level learner are boxes in the ink colours; the average, the weighted vote and the learner are the emphasis blue (D-009);
+   a boosted example that a model got wrong is a RING (red = negative, and a ring is a shape the dot does not have, D-068) and the next dot is bigger: the size is the weight. A resampled rating that comes
+   twice is double-framed. The titles are the page's terms (data-role="term": no colour is written on them here). */
+.fm-pic,.fm-field,.fm-row,.fm-strip,.fm-heat{position:absolute}
+.fm-pic{left:0;top:0;width:100%;height:100%}
+.fm-chip{position:absolute;box-sizing:border-box;display:grid;place-items:center;border:3px solid var(--ink-soft);border-radius:10px;background:var(--ground);color:var(--ink);font:600 30px/1 var(--f-body)}
+.fm-lbl{position:absolute;white-space:nowrap;font:600 26px/1.2 var(--f-body);color:var(--ink)}
+.fm-soft{color:var(--ink-soft)}
+.fm-title{position:absolute;white-space:nowrap;font:700 36px/1.2 var(--f-body)}
+/* WP-50: a group heading over cards (the matrix picture: bagging | randomness injection), a rule under it in the ink-soft token */
+.fm-group{box-sizing:border-box;text-align:center;color:var(--ink-soft);font-size:24px;padding-bottom:4px;border-bottom:3px solid var(--ink-soft)}
+.fm-model{position:absolute;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:12px;border:4px solid var(--ink-soft);border-radius:16px;background:color-mix(in srgb,var(--ink) 5%,var(--ground));color:var(--ink);font:700 30px/1 var(--f-body)}
+.fm-model .pg,.fm-vote .pg,.fm-learner .pg{color:var(--ink-soft)}
+.fm-pill{position:absolute;box-sizing:border-box;display:grid;place-items:center;border:3px solid var(--ink-soft);border-radius:999px;background:var(--ground);color:var(--ink);font:700 32px/1 var(--f-body);font-variant-numeric:tabular-nums}
+.fm-out{font-size:26px}
+.fm-avg{position:absolute;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:4px solid var(--emph);border-radius:20px;background:color-mix(in srgb,var(--emph) 12%,var(--ground))}
+.fm-avgnum{font:700 54px/1 var(--f-body);font-variant-numeric:tabular-nums;color:var(--ink)}
+.fm-avgsub{font:600 26px/1.2 var(--f-body);color:var(--ink-soft)}
+.fm-arrow{fill:none;stroke:var(--ink-soft);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.fm-dot{position:absolute;display:block;border-radius:50%;background:var(--ink-soft)}
+.fm-ring{position:absolute;display:block;box-sizing:border-box;border-radius:50%;border:5px solid var(--neg)}
+.fm-vote,.fm-learner{position:absolute;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:12px;border:4px solid var(--emph);border-radius:20px;background:color-mix(in srgb,var(--emph) 12%,var(--ground));color:var(--ink);font:600 26px/1.15 var(--f-body);text-align:center}
+.fm-cell{position:absolute;display:block;box-sizing:border-box;border:3px solid var(--emph);border-radius:8px}
+.fm-card{position:absolute;box-sizing:border-box;padding:18px 20px;border-radius:20px;background:color-mix(in srgb,var(--ink) 5%,var(--ground))}
+.fm-cardtitle{text-align:center;font:600 28px/1.2 var(--f-body);color:var(--ink)}
+.fm-cardbody{position:relative;height:340px;margin-top:14px}
+.fm-mcell{position:absolute;display:block;box-sizing:border-box;border:3px dashed var(--todo);border-radius:8px}
+.fm-mcell.on{border:3px solid var(--ink-soft);background:var(--ink-soft)}
+.fm-mcell.twice{outline:4px solid var(--ink-soft);outline-offset:4px}
+.fm-nb{position:absolute;display:block;box-sizing:border-box;border:4px solid var(--ink-soft);border-radius:50%}
+.fm-nb.on{border-color:var(--emph);background:var(--emph)}
+.fm-hcell{position:absolute;display:block;box-sizing:border-box;border:2px solid var(--term);border-radius:6px}
+
+/* ---------- pipeline, mode designs (WP-50, D-112; widgets/pipeline-designs.js) ----------
+   The two designs of an ensemble, boxes and arrows. Meaning never rests on colour alone (D-068): the combiner (where the outputs meet, in both panels) is the emphasis blue AND a box of its own, a dashed
+   arrow is dashed (a shape) as well as drawn after the solid ones; the panel titles and the chips are the page's terms (data-role="term": no colour is written on them here). A solid arrow is one path of
+   pathLength 1 drawn with the dash pattern "1 2" (offset 1.02 hides it); a dashed one is wiped in from the left by clipPath on its wrapper (a dash pattern cannot be offset-revealed), its head a solid path. */
+.dg-band{position:absolute;box-sizing:border-box;border-radius:28px;border:3px solid var(--todo);background:color-mix(in srgb,var(--ink) 4%,var(--ground))}
+.dg-title{position:absolute;white-space:nowrap;font:700 36px/1.2 var(--f-body)}
+.dg-box{position:absolute;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:0 12px;border:4px solid var(--ink-soft);border-radius:16px;background:color-mix(in srgb,var(--ink) 5%,var(--ground));color:var(--ink);font:600 28px/1.15 var(--f-body);text-align:center}
+.dg-comb{border-color:var(--emph);background:color-mix(in srgb,var(--emph) 12%,var(--ground))}
+.dg-arrow{fill:none;stroke:var(--ink-soft);stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1 2}
+.dg-dash{stroke-dasharray:16 12}
+.dg-head{stroke-dasharray:none}
+/* the names of the outputs (P1, P2) and the key of the arrows: soft ink, the samples drawn like the arrows they stand for */
+.dg-pn{position:absolute;white-space:nowrap;font:italic 600 26px/1.2 var(--f-body);color:var(--ink-soft)}
+.dg-key{position:absolute;display:flex;align-items:center;justify-content:flex-end;gap:12px;white-space:nowrap;font:600 26px/1.2 var(--f-body);color:var(--ink-soft)}
+.dg-key svg{display:block;margin-left:24px;overflow:visible}
+.dg-ksolid,.dg-kdash{fill:none;stroke:var(--ink-soft);stroke-width:4;stroke-linecap:round}
+.dg-kdash{stroke-dasharray:16 12}
+.dg-wipe{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
+.dg-wipe svg{position:absolute;left:0;top:0;overflow:visible}
+.dg-chip{position:absolute;box-sizing:border-box;display:grid;place-items:center;border:3px solid var(--ink-soft);border-radius:999px;background:var(--ground);font:700 28px/1 var(--f-body);white-space:nowrap}
+
+/* ---------- pipeline, modes kinds and meta (WP-51, D-124; widgets/pipeline-kinds.js, pipeline-meta.js) ----------
+   Boxes, arrows and profile cards, built on the rules of the designs mode above (.dg-band, .dg-title, .dg-box, .dg-comb, .dg-arrow). Meaning never rests on colour alone (D-068): the two kinds of data differ by an icon and a name, a
+   weighted arrow is drawn again thicker (7 against 4 px, the emphasis blue) and carries a label, the blend and the box that is handed on are the emphasis blue AND boxes of their own, the upper panel of the kinds mode is dimmed
+   (opacity), not recoloured. The bars of a profile are tracks with a fill (a shape: length); tokens only. */
+.dg-panel{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
+.dg-data{gap:14px}
+.dg-box .pg-icon{flex:none;color:var(--ink-soft)}
+.dg-stack{flex-direction:column;gap:8px}
+.dg-lit{stroke:var(--emph);stroke-width:7}
+.dg-w{position:absolute;box-sizing:border-box;display:grid;place-items:center;border:3px solid var(--emph);border-radius:999px;background:var(--ground);font:italic 600 26px/1 var(--f-body);color:var(--ink)}
+.dg-w sub{font-size:.62em;line-height:0}
+.dg-pass{flex-direction:column;gap:8px}
+.dg-pass .pg-stars{color:var(--ink)}
+.pf-head{position:absolute;white-space:nowrap;font:700 28px/1.2 var(--f-body);color:var(--ink-soft)}
+.pf-card{position:absolute;box-sizing:border-box;border:4px solid var(--ink-soft);border-radius:16px;background:color-mix(in srgb,var(--ink) 5%,var(--ground))}
+.pf-card .pg-icon{position:absolute;left:20px;top:28px;color:var(--ink-soft)}
+.pf-row{position:absolute;left:90px;right:28px;display:flex;align-items:center;gap:12px;height:24px;font:600 24px/1 var(--f-body);color:var(--ink)}
+.pf-row span{flex:none;width:138px;white-space:nowrap}
+.pf-track{position:relative;flex:1;height:14px;box-sizing:border-box;border:3px solid var(--ink-soft);border-radius:7px;overflow:hidden}
+.pf-fill{position:absolute;left:0;top:0;bottom:0;background:var(--ink-soft);transform-origin:left center}
+.pf-sim{position:absolute;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:12px;border:3px solid var(--emph);border-radius:999px;background:var(--ground);font:600 24px/1 var(--f-body);color:var(--ink);white-space:nowrap}
+.pf-sim svg{flex:none;fill:none;stroke:var(--ink);stroke-width:3;stroke-linecap:round}
+.pf-mini{display:flex;align-items:center;gap:14px}
+.pf-mini .pg-icon{flex:none;color:var(--ink-soft)}
+.pf-minibars{display:flex;flex-direction:column;gap:6px;width:140px}
+.pf-mrow .pf-track{height:12px}
+
+/* ---------- chart-draw (WP-50, D-112; mode `vote`: widgets/chart-vote.js) ----------
+   A chart is lines, areas and labels. Lines and areas are SVG (strokes in tokens), labels are HTML so they take the roles of roles.css. Meaning never rests on colour alone (D-068):
+   the independent curve is green with round dots, the copies are a neutral dashed line without dots, the worse curve is red with square dots; the village fair's two weights are a filled
+   and a hollow circle. The gold wash of the key press is the gold band token --key-band (D-009: gold = must know). */
+.cv-svg{position:absolute;left:0;top:0;overflow:visible}
+.cv-layer{position:absolute;left:0;top:0;width:100%;height:100%}
+.cv-grid{fill:none;stroke:color-mix(in srgb,var(--ink-soft) 30%,var(--ground));stroke-width:2}
+.cv-axis{fill:none;stroke:var(--ink-soft);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.cv-chance{fill:none;stroke:var(--ink-soft);stroke-width:3;stroke-dasharray:3 10}
+/* pathLength=1: "1 2" is one dash the length of the path and a gap of two, so a dash offset of 1.02 hides the whole line (the same device as .tg-edge) */
+.cv-line{fill:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1 2}
+.cv-a{stroke:var(--pos)}
+.cv-c{stroke:var(--neg)}
+.cv-gline{stroke:var(--ink-soft);stroke-width:5}
+.cv-gtick{stroke-width:4}
+/* the dashed line cannot be revealed by a dash offset (the pattern would slide), so a wrapper is wiped in with clip-path */
+.cv-wipe{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
+.cv-wipe svg{position:absolute;left:0;top:0;overflow:visible}
+.cv-b{stroke:var(--ink);stroke-width:6;stroke-dasharray:22 14;stroke-linecap:butt}
+.cv-gap{fill:color-mix(in srgb,var(--key-band) 42%,var(--ground));stroke:none}
+/* on the dark ground the same share of gold turns a muddy olive and the green values over it fall under 4.5:1 (measured: 4.26); a thinner wash keeps them readable */
+:root[data-theme="dark"] .cv-gap{fill:color-mix(in srgb,var(--key-band) 32%,var(--ground))}
+.cv-dot{position:absolute;box-sizing:border-box;width:26px;height:26px;border-radius:50%;background:var(--ground);border:7px solid var(--ink-soft)}
+.cv-dot-a{background:var(--pos);border-color:var(--pos)}
+.cv-dot-c{border-radius:5px;background:var(--neg);border-color:var(--neg)}
+/* text: no colour on an element that carries [data-role] (the role's colour would lose at equal specificity) */
+.cv-root{color:var(--ink)}
+.cv-lbl{position:absolute;white-space:nowrap;font:600 30px/1.15 var(--f-body)}
+.cv-ytick,.cv-xtick{font:400 28px/36px var(--f-body);color:var(--ink-soft);font-variant-numeric:tabular-nums;text-align:right}
+.cv-xtick{text-align:center}
+.cv-axtitle{font:600 28px/1.2 var(--f-body);color:var(--ink-soft)}
+.cv-chance-lbl{font:400 28px/1.2 var(--f-body);color:var(--ink-soft)}
+.cv-val{font:600 30px/1.1 var(--f-body);font-variant-numeric:tabular-nums}
+.cv-series{font:600 30px/1.15 var(--f-body)}
+.cv-soft{color:var(--ink-soft)}
+.cv-tag{font:italic 400 26px/1.2 var(--f-body);color:var(--ink-soft)}
+.cv-gend{font:400 26px/1.2 var(--f-body);color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.cv-gdot{position:absolute;box-sizing:border-box;width:30px;height:30px;border-radius:50%}
+.cv-gdot-fill{background:var(--ink)}
+.cv-gdot-ring{background:var(--ground);border:6px solid var(--ink)}
+.cv-gval{font:600 38px/1.1 var(--f-body);text-align:center;font-variant-numeric:tabular-nums}
+.cv-gsub{display:block;font:400 26px/1.2 var(--f-body);color:var(--ink-soft)}
+.cv-gnote{font:400 28px/1.2 var(--f-body);color:var(--ink-soft)}
+.cv-dec{position:absolute;left:0;top:0;width:100%;height:100%}
+.cv-seg{position:absolute;box-sizing:border-box;border:4px solid var(--ink-soft);border-radius:6px}
+.cv-seg-0{background:color-mix(in srgb,var(--term) 30%,var(--ground));border-color:var(--term)}
+.cv-seg-1{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--term) 32%,var(--ground)) 0 10px,color-mix(in srgb,var(--term) 10%,var(--ground)) 10px 20px);border-color:var(--term)}
+.cv-seg-2,.cv-seg-3{background:color-mix(in srgb,var(--ink-soft) 16%,var(--ground))}
+.cv-segname{font:600 32px/1.15 var(--f-body)}
+.cv-plus{font:400 52px/48px var(--f-body);color:var(--ink-soft)}
+.cv-brace{position:absolute;overflow:visible}
+
+/* ---------- chart-draw, mode milestones (WP-50, D-112; widgets/chart-milestones.js) ----------
+   The published test RMSEs of the Netflix Prize on a ladder of milestones, and a card of production numbers kept apart. Meaning never rests on colour alone (D-068): a point of the leaderboard is round,
+   the winner of the tie is filled and the runner-up a ring; the target is dashed AND the emphasis blue; the production numbers are in a card with a dashed border and square marks (a different set). The
+   washes of the key press are the gold band token --key-band (D-009: gold = must know), thinner in the dark theme as the .cv-gap is. The text classes of .cv-* (cv-lbl, cv-val, cv-ytick, cv-axtitle) are shared. */
+.ms-ref{fill:none;stroke:var(--ink-soft);stroke-width:3;stroke-dasharray:1 2}
+.ms-target{fill:none;stroke:var(--emph);stroke-width:5;stroke-dasharray:22 14}
+.ms-seg{fill:none;stroke:var(--ink-soft);stroke-width:5;stroke-linecap:round;stroke-dasharray:1 2}
+.ms-brace{fill:none;stroke:var(--emph);stroke-width:4;stroke-linecap:round}
+.ms-leader{fill:none;stroke:var(--ink-soft);stroke-width:3;stroke-linecap:round;stroke-dasharray:3 9}
+.ms-dot{position:absolute;box-sizing:border-box;width:26px;height:26px;border-radius:50%;background:var(--ink);border:7px solid var(--ink)}
+.ms-dot.ms-ring{background:var(--ground)}
+.ms-cat{font:600 28px/1.15 var(--f-body);text-align:center;color:var(--ink)}
+.ms-sub{display:block;font:400 24px/1.2 var(--f-body);color:var(--ink-soft)}
+.ms-quiz{display:block;font:400 26px/1.2 var(--f-body);color:var(--ink-soft)}
+.ms-wash{position:absolute;border-radius:26px;background:color-mix(in srgb,var(--key-band) 42%,var(--ground))}
+/* on the dark ground gold is much brighter against the text: at 32 % the soft ink is 3.70:1 and the emphasis blue 3.36:1 over it (measured), at 18 % 5.4 and 4.9 */
+:root[data-theme="dark"] .ms-wash{background:color-mix(in srgb,var(--key-band) 18%,var(--ground))}
+.ms-card{position:absolute;box-sizing:border-box;padding:16px 22px;border-radius:20px;background:var(--ground);border:3px solid var(--ink-soft)}
+.ms-tie{font:700 30px/1.2 var(--f-body);color:var(--ink);font-variant-numeric:tabular-nums}
+.ms-team{display:flex;align-items:center;gap:12px;margin-top:10px;font:600 26px/1.2 var(--f-body);color:var(--ink)}
+.ms-mark{display:block;box-sizing:border-box;width:20px;height:20px;flex:none;border-radius:50%;background:var(--ink);border:5px solid var(--ink)}
+.ms-mark.ms-ring{background:var(--ground)}
+.ms-tname{white-space:nowrap}
+.ms-ttime{margin-left:auto;font:400 26px/1.2 var(--f-body);color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.ms-won{margin-top:12px;font:700 26px/1.2 var(--f-body)}
+.ms-prod{position:absolute;box-sizing:border-box;padding:18px 24px;border-radius:22px;background:var(--ground);border:4px dashed var(--ink-soft)}
+.ms-ptitle{font:700 30px/1.2 var(--f-body);color:var(--ink)}
+.ms-prow{position:absolute;left:24px;right:24px;display:flex;align-items:center;gap:16px;height:56px;font:600 28px/1.2 var(--f-body);color:var(--ink)}
+.ms-psq{display:block;width:22px;height:22px;flex:none;border-radius:4px;background:var(--ink-soft)}
+.ms-pval{margin-left:auto;font:700 34px/1.2 var(--f-body);font-variant-numeric:tabular-nums}
+.ms-pnote{position:absolute;left:24px;right:24px;bottom:22px;padding:2px 0;text-align:center;font:italic 400 26px/1.2 var(--f-body);color:var(--ink-soft);border:3px dashed var(--ink-soft);border-radius:999px}
+
+/* ---------- table-highlight, mode groups (WP-50, D-112; widgets/table-groups.js) ----------
+   Three groups of inputs flow into ONE model. Meaning never rests on colour alone (D-068): a weak group is dimmed (its arrow with it) while the strong one is ringed (a shape) as well as blue; the model is the emphasis blue
+   and a box of its own; the gold wash of the key press is the gold band token --key-band (D-009), thinner in the dark theme (as .ms-wash is: the text there must keep 4.5:1). An arrow is one path of pathLength 1 drawn
+   with the dash pattern "1 2" (offset 1.02 hides it). */
+.gx-wash{position:absolute;border-radius:26px;background:color-mix(in srgb,var(--key-band) 42%,var(--ground))}
+:root[data-theme="dark"] .gx-wash{background:color-mix(in srgb,var(--key-band) 18%,var(--ground))}
+.gx-box{position:absolute;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:16px;padding:0 20px;border:4px solid var(--ink-soft);border-radius:18px;background:color-mix(in srgb,var(--ink) 5%,var(--ground));color:var(--ink);font:600 28px/1.15 var(--f-body);text-align:center}
+.gx-box .pg{color:var(--ink-soft)}
+.gx-model,.gx-out{flex-direction:column;gap:12px}
+.gx-model{border-color:var(--emph);background:color-mix(in srgb,var(--emph) 12%,var(--ground))}
+.gx-arrow{fill:none;stroke:var(--ink-soft);stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1 2}
+.gx-lit{stroke:var(--emph);stroke-width:7}
+.gx-ring{position:absolute;box-sizing:border-box;border:5px solid var(--emph);border-radius:24px}
+.gx-film{position:absolute;box-sizing:border-box;border:3px solid var(--ink-soft);border-radius:18px;background:var(--ground)}
+.gx-raters{position:absolute;left:104px;top:22px;display:flex;gap:8px;color:var(--ink-soft)}
+.gx-count{position:absolute;left:100px;top:74px;right:12px;font:600 26px/1.2 var(--f-body);color:var(--ink)}

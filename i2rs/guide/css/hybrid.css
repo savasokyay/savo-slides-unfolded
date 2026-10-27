@@ -1,0 +1,822 @@
+/* WP-221: Hybrid & ensemble overview page (pages/hybrid-page.js). The look of the Content-based overview (css/cbf.css), in its own `.hybrid-*` namespace so the pages stay independent.
+   Reuses .panel/.chip/.data-table/.help-tip and the flowchart's svg classes from app.css / trace.css; colours are tokens only, so the dark theme is free.
+
+   Text size: ONE variable. `--hybrid-zoom` (set on .hybrid-page by the - / + group in the title row, components/zoom-control.js, 0.7 ... 1.4, 1 by default, kept in localStorage as
+   i2rs.zoom.text.hybrid) multiplies the page's base font size (16 px at 1.0x: the lecture screen is read from the back of a room); every other size on the page is in em of that base. The
+   panel / chip / table sizes of app.css are px, so they are re-stated in em here, inside .hybrid-page only. The three figures are svgs that fill their box up to a cap that follows the
+   same factor, so their text grows with the rest. */
+
+.hybrid-page {
+  --hybrid-base: 16px;
+  font-size: calc(var(--hybrid-base) * var(--hybrid-zoom, 1));
+}
+.hybrid-page h2 {
+  margin: 0;
+  font-size: 1.3em;
+  color: var(--navy);
+}
+.hybrid-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 8px;
+}
+/* the - / + group: the look of the uCF / iCF panels' group (trace.css scopes it to .layout-f, which this page is not); fixed px, so a step never moves it. */
+.hybrid-page .zoom-buttons {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: 2px 0 0 auto;
+  align-self: flex-start; /* pinned to the top of the row: the title grows with the factor, and a centred group would drift down with it */
+}
+.hybrid-page .zoom-btn {
+  width: 22px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--card);
+  color: var(--navy);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.hybrid-page .zoom-btn:hover:not(:disabled) {
+  border-color: var(--navy);
+}
+.hybrid-page .zoom-btn:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+}
+.hybrid-page .zoom-btn:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: 1px;
+}
+.hybrid-page .zoom-value {
+  min-width: 3.2em;
+  text-align: center;
+  font-size: 11px;
+  font-weight: var(--fw-body, 400);
+  color: var(--strong);
+  font-variant-numeric: tabular-nums;
+}
+
+/* key words: a text of config/i18n marks them with **...** and util/emphasis.js draws `strong.key` - coloured and bold, a few per paragraph */
+.hybrid-page .key {
+  color: var(--navy);
+  font-weight: var(--fw-heading, 600);
+}
+
+/* contents chips */
+.hybrid-toc {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.hybrid-toc .chip {
+  font: inherit;
+  font-size: 0.8em;
+  cursor: pointer;
+}
+.hybrid-toc .chip:hover {
+  border-color: var(--navy);
+}
+
+.hybrid-page .panel-head h3 {
+  font-size: 1em;
+}
+.hybrid-page .panel-head {
+  flex-wrap: wrap; /* a heading, its (i) and the caret: wraps under a large text size rather than overflowing */
+}
+.hybrid-page .panel-head .caret {
+  margin-left: auto;
+}
+.hybrid-text {
+  margin: 0 0 10px;
+  line-height: 1.5;
+  color: var(--strong);
+}
+/* the callout under the dartboard - the text is `strong.key` (the page's emphasis); only the room around it is set here */
+.hybrid-callout {
+  margin: 12px 0 10px;
+}
+.hybrid-src {
+  margin: 8px 0 0;
+  font-size: 0.8em;
+  line-height: 1.4;
+  color: var(--strong); /* --muted (#888) is 3.5 : 1 on the card: below AA for text this small */
+}
+
+/* tables: the full width, long text wraps (break-word, not "anywhere": the latter makes every column's minimum tiny) */
+.hybrid-page table.data-table.hybrid-table {
+  width: 100%;
+  table-layout: fixed;
+  font-size: 1em; /* the shared table sets 12px: that would stop it following the page's factor */
+}
+.hybrid-page .table-wrap {
+  overflow-x: auto;
+}
+.hybrid-table th,
+.hybrid-table td {
+  vertical-align: top;
+  padding: 6px 10px;
+  font-size: 0.875em;
+  line-height: 1.4;
+  overflow-wrap: break-word;
+}
+.hybrid-page table.data-table.hybrid-table thead th {
+  font-size: 0.8em; /* beats the shared `table.data-table thead th` (10.5px): the head follows the factor too */
+  color: var(--strong); /* the shared head is --muted: 3.5 : 1 on the card */
+}
+.hybrid-table tbody th {
+  border-bottom: 1px solid var(--line); /* the shared table styles td and thead th only */
+}
+.hybrid-table .hybrid-crit {
+  text-align: left;
+  font-weight: var(--fw-label);
+  color: var(--ink);
+  text-transform: none;
+}
+/* the types table: the type, what it combines, how it is wired, where the lab stands; the lab cell is the longest (a pill, a link, a sentence) */
+.hybrid-types th:nth-child(1) {
+  width: 15%;
+}
+.hybrid-types th:nth-child(2) {
+  width: 29%;
+}
+.hybrid-types th:nth-child(3) {
+  width: 13%;
+}
+.hybrid-types th:nth-child(4) {
+  width: 43%;
+}
+/* the families table: the family, how it works, what it lowers, where the lab stands */
+.hybrid-families th:nth-child(1) {
+  width: 16%;
+}
+.hybrid-families th:nth-child(2) {
+  width: 40%;
+}
+.hybrid-families th:nth-child(3) {
+  width: 17%;
+}
+.hybrid-families th:nth-child(4) {
+  width: 27%;
+}
+
+/* where the lab stands, as a pill (HTML: the table cells; the svg twin is .hybrid-pill-box below) - open = a page exists, future = future work (WP-231: the sidebar's planned row says the same; a type with neither has no pill) */
+.hybrid-pill {
+  display: inline-block;
+  padding: 0 0.7em;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 0.8em;
+  font-weight: var(--fw-label);
+  line-height: 1.6;
+  color: var(--strong);
+  white-space: nowrap;
+}
+.hybrid-pill.open {
+  border-color: var(--navy);
+  background: var(--navy);
+  color: var(--on-navy);
+}
+.hybrid-pill.future { /* WP-231: was .week */
+  border-color: var(--navy);
+  color: var(--navy);
+}
+.hybrid-pill.project { /* WP-232b: the term project - the project blue, as the leaf of the figure */
+  border-color: var(--project-blue);
+  background: var(--project-blue);
+  color: var(--on-project);
+}
+.hybrid-link {
+  color: var(--navy);
+  font-weight: var(--fw-heading, 600);
+}
+.hybrid-lab-cell .hybrid-link {
+  margin-right: 0.2em;
+}
+
+/* the figures: boxes in the flowchart's own look (trace.css .flow-node-box / .flow-label / .flow-edge); each svg fills its box up to a cap that follows the text size */
+.hybrid-figure {
+  margin: 4px 0 12px;
+}
+.hybrid-page svg.hybrid-tax {
+  width: 100%;
+  max-width: calc(962px * var(--hybrid-zoom, 1) * 1.25);
+}
+.hybrid-page svg.hybrid-designs {
+  width: 100%;
+  max-width: calc(960px * var(--hybrid-zoom, 1) * 1.25);
+}
+.hybrid-page svg.hybrid-dart {
+  width: 100%;
+  max-width: calc(582px * var(--hybrid-zoom, 1) * 1.4);
+  margin-left: 0;
+}
+.hybrid-flow .hybrid-node {
+  cursor: default; /* the shared .flow-node is a pointer: only a leaf that opens a lab page is */
+  outline: none;
+}
+.hybrid-flow .hybrid-node[role="link"] {
+  cursor: pointer;
+}
+.hybrid-flow .hybrid-node:focus-visible .flow-node-box {
+  stroke: var(--navy);
+  stroke-width: 3;
+}
+.hybrid-flow .hybrid-node.leaf.open .flow-node-box,
+.hybrid-flow .hybrid-node.combine .flow-node-box {
+  stroke: var(--navy); /* the leaves with a lab page, and the combiner of the designs figure */
+}
+.hybrid-flow .hybrid-node.branch .flow-node-box {
+  fill: var(--surface);
+}
+.hybrid-flow .hybrid-node.io .flow-node-box {
+  fill: var(--surface);
+}
+.hybrid-flow .hybrid-name {
+  font-size: 15px; /* measureIn() in the page measures the line breaks at this size (NAME_FONT_PX) */
+  font-weight: 600;
+}
+.hybrid-flow .hybrid-pill-box {
+  fill: var(--surface);
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.hybrid-flow .hybrid-pill-box.future { /* WP-231: was .week */
+  stroke: var(--navy);
+}
+.hybrid-flow .hybrid-pill-box.project { /* WP-232b: only the pill of the Mixed leaf is blue (the leaf's box stays like the other leaves'), the same oval as every pill */
+  fill: var(--project-blue);
+  stroke: var(--project-blue);
+}
+.hybrid-flow .hybrid-pill-box.open {
+  fill: var(--navy);
+  stroke: var(--navy);
+}
+.hybrid-flow .hybrid-pill-label {
+  font-size: 12px;
+  font-weight: 600;
+  fill: var(--strong);
+  stroke: none;
+  pointer-events: none;
+}
+.hybrid-flow .hybrid-pill-label.future { /* WP-231: was .week */
+  fill: var(--navy);
+}
+.hybrid-flow .hybrid-pill-label.project { /* WP-232b: the ink of the project blue (white; the dark ground in the dark theme) */
+  fill: var(--on-project);
+}
+.hybrid-flow .hybrid-pill-label.open {
+  fill: var(--on-navy);
+}
+/* dashed connectors: the textbook's dotted line to feature augmentation, and the rails of the sequential design; `.hybrid-hit` is a wide invisible stroke so a hover finds the thin line */
+.hybrid-flow .hybrid-dotted-line,
+.hybrid-flow .hybrid-edge.dashed {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+}
+.hybrid-flow .hybrid-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 14;
+  pointer-events: stroke;
+}
+.hybrid-flow .hybrid-dotted,
+.hybrid-flow .hybrid-rail {
+  outline: none;
+}
+.hybrid-flow .hybrid-dotted:hover .hybrid-dotted-line,
+.hybrid-flow .hybrid-dotted:focus-visible .hybrid-dotted-line,
+.hybrid-flow .hybrid-rail:hover .hybrid-edge,
+.hybrid-flow .hybrid-rail:focus-visible .hybrid-edge {
+  stroke: var(--navy);
+}
+.hybrid-flow .hybrid-fig-title {
+  font-size: 15px;
+  font-weight: 700;
+  fill: var(--navy);
+  stroke: none;
+}
+.hybrid-flow .hybrid-pred {
+  font-size: 13px;
+  font-style: italic;
+  fill: var(--strong);
+  stroke: none;
+}
+.hybrid-flow .hybrid-dots {
+  font-size: 20px;
+  fill: var(--strong);
+  stroke: none;
+}
+/* the dartboard: rings in the line colour, the bullseye in ink, the hits in the page's navy with a card-coloured edge so overlapping hits stay countable */
+.hybrid-flow .hybrid-axis {
+  font-size: 15px;
+  font-weight: 600;
+  fill: var(--strong);
+  stroke: none;
+}
+.hybrid-flow .hybrid-ring {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1.2;
+}
+.hybrid-flow .hybrid-bull {
+  fill: var(--ink);
+}
+.hybrid-flow .hybrid-dart-hit {
+  fill: var(--navy);
+  fill-opacity: 0.85;
+  stroke: var(--card);
+  stroke-width: 1;
+}
+.hybrid-flow .hybrid-node.dart .flow-node-box {
+  fill: var(--card);
+}
+
+/* what a hovered or focused box says: a bubble over the box (fixed, so the page's scroll box never clips it); its size is rem, so the presenting view enlarges it */
+.hybrid-tip {
+  position: fixed;
+  z-index: 60;
+  width: 22rem;
+  max-width: calc(100vw - 16px);
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--r-lg);
+  background: var(--navy);
+  color: var(--on-navy);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  text-align: left;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  overflow-y: auto;
+  pointer-events: none;
+}
+.hybrid-tip[hidden] {
+  display: none;
+}
+
+/* the formulas: display math, scrolls inside its own box rather than widening the page */
+.hybrid-formula {
+  margin: 0 0 12px;
+  min-width: 0;
+}
+.hybrid-formula figcaption {
+  font-size: 0.8em;
+  color: var(--strong); /* no uppercase: a caption names symbols (|H|, P, r) and capitals would change them */
+}
+.hybrid-tex {
+  overflow-x: auto;
+  overflow-y: hidden;
+  font-size: 1em;
+}
+.hybrid-tex .katex-display {
+  margin: 0.3em 0;
+  text-align: left;
+}
+.hybrid-tex .katex-display > .katex {
+  text-align: left;
+}
+
+/* the reading of the formulas, the week's links and the reference */
+.hybrid-list,
+.hybrid-ref-list {
+  margin: 0 0 10px;
+  padding-left: 1.3em;
+  line-height: 1.5;
+  color: var(--strong);
+}
+.hybrid-list li {
+  margin-bottom: 6px;
+}
+.hybrid-ref-list {
+  font-size: 0.9em;
+  line-height: 1.45;
+}
+.hybrid-links {
+  margin: 0;
+  padding-left: 1.3em;
+  line-height: 1.6;
+}
+.hybrid-link-text {
+  margin-left: 0.6em;
+  color: var(--strong);
+}
+
+/* ── WP-222: the weighted hybrid's walk page (`#/combine?m=weighted`, pages/trace-page.js with engine "hybrid") ──────────────────────────────────────────────────────────────────────────────
+   The sub-matrix panel's head is a strip of three tabs - Bases | Weights | Blend - and each tab is a body that lies over the panel's own (covered for good: this page has no sub-matrix), like the
+   content page's tabs (trace.css `.profile-body` ...). Two things share each body: Bases = the bases table (a few rows, keeps its height) over the held-out table (takes the rest, scrolls inside);
+   Weights = the trajectory curve over the trajectory table; Blend = the weights against what the bases say about the target (the profile view: two rows over the bases) over the contributions table.
+   A host the walk has not reached yet is hidden (`hidden`), so a tab shows no head row with nothing under it. */
+.layout-f .area-heat .hybrid-body {
+  position: absolute;
+  top: 40px; /* the tab strip's fixed height (trace.css `.heat-tabs-head`) */
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px; /* WP-222 (real data): 8 -> 4, with the padding below trimmed, the room goes to the held-out table */
+  padding: 4px 10px 6px;
+  overflow: hidden;
+  background: var(--card);
+  border-radius: 0 0 var(--r-lg) var(--r-lg);
+}
+.layout-f .area-heat .hybrid-body[hidden] {
+  display: none; /* a tab's body while another tab shows: no other rule may show it again */
+}
+.hybrid-host {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.hybrid-host[hidden] {
+  display: none;
+}
+.hybrid-host .table-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+.hybrid-host-bases,
+.hybrid-host-profile {
+  flex: none; /* a few rows: the host keeps its own height, the table under it takes the rest */
+}
+.hybrid-host-heldout,
+.hybrid-host-contributions {
+  flex: 1 1 0;
+}
+.hybrid-host-curve {
+  flex: 3 1 0;
+  min-height: 150px;
+}
+.hybrid-host-trajectory {
+  flex: 2 1 0;
+}
+.hybrid-curve-host {
+  flex: 1 1 0;
+  min-height: 0;
+}
+/* The Bases tab on real data: the held-out table holds up to 50 entries and its host got whatever the bases table left (96 px at 1536: two rows). The bases table is the one that can be dense -
+   it has a handful of rows and is read as a table of figures - so its rows are tight (vertical padding only: the head and the cells keep the same 8 px sides, the edges still coincide), the two
+   hosts' headings and the body's own padding are trimmed (measured at 1536 x 864, EN, toy: held-out host 162 px while the four bases are fitted, 144 px once the intercept row joins at the compare step; was 96 px). */
+.hybrid-host .table-head {
+  margin-bottom: 2px;
+  font-size: 11px;
+}
+.hybrid-host-bases table.data-table td {
+  padding: 1px 6px; /* WP-233: 8 -> 6 px sides (head and cells alike, the edges still coincide): the longest name (the content base's) needs 24 px more than the figure columns left it while the bases were being fitted */
+  font-size: 11.5px;
+}
+.hybrid-host-bases table.data-table thead th {
+  padding: 2px 6px;
+  white-space: nowrap; /* WP-233: the name cell is long now (badge, short name, method), so the figure columns' heads would wrap to two lines (measured: +14 px of head at 1520 x 715, the held-out table spilled 9 px past the panel); one line each, the name column takes what is left */
+}
+.hybrid-host-heldout {
+  min-height: 144px;
+}
+/* WP-233: the Bases tab opens with the sentence that says what the bases are (the methods of the earlier pages): it sits in the tab's head beside the (i) - the strip's empty middle, so the two
+   tables under it keep the room they had (a line of text in the body cost the held-out table 28 px at the compare step, measured at 1520 x 715) - at most two lines of the 40 px head, the
+   whole sentence is its hover text and the (i)'s. The bases table's name cell is a link to that page, the arrow its cue (the settings in effect are the cell's hover sentence). The name
+   keeps one line (nowrap): a dense table of figures, its rows stay tight. */
+.hybrid-bridge {
+  min-width: 0;
+  max-height: 30px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  font-size: 11px;
+  line-height: 15px;
+  color: var(--strong);
+}
+/* WP-235: the switching walk's sentence is longer and its tab strip wider (Bases | Leaderboard | Answer): three lines of 10.5 px in the same 40 px head */
+.hybrid-bridge[data-lines="3"] {
+  max-height: 36px;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  font-size: 10.5px;
+  line-height: 12px;
+}
+.hybrid-base-cell {
+  /* the name column takes what the figure columns leave (their heads keep one line) and gives way with an ellipsis when a narrow panel has less than the name needs: the table never grows a
+     scroll bar of its own (measured at 1520 x 715: the long names had pushed the table 10 px past the panel while the bases were being fitted) */
+  width: 100%;
+  max-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hybrid-base-link {
+  color: inherit;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.hybrid-base-link:hover .hybrid-base-name,
+.hybrid-base-link:focus-visible .hybrid-base-name {
+  text-decoration: underline;
+}
+.hybrid-base-open {
+  margin-left: 2px;
+  font-size: 10px;
+  color: var(--navy);
+}
+
+/* ── WP-235: what the Weights and Blend tabs say (the instructor's walk of 2026-10-24) ─────────────────────────────────────────────────────────────────────────────────────────────────────────
+   The line above the curve (the fall since the equal start; its hover sentence says what the 30 steps are): one line, and it keeps its place while empty, so the plot does not jump when it fills. */
+.hybrid-curve-note {
+  flex: none;
+  min-height: 16px;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* The trajectory table's row of the step the walk is on: its RMSE cell takes the tone of the chart's marker (green: the error fell, red: it rose, grey: it moved by less than 1e-4; the glyph beside the
+   figure is the second cue and is always in the cell, hidden until the row is focused, so the column never changes width) and the weight that moved the most is outlined. Ink stays the ink: the tint is light
+   (about 24 % of the tone into the card) in both themes. */
+.hybrid-trend {
+  visibility: hidden;
+  margin-left: 2px;
+}
+.hybrid-host-trajectory table.data-table tbody tr.focus td[data-trend] .hybrid-trend {
+  visibility: visible;
+}
+.hybrid-host-trajectory table.data-table tbody tr.focus td[data-trend="down"] {
+  background: color-mix(in srgb, var(--green) 24%, var(--card));
+}
+.hybrid-host-trajectory table.data-table tbody tr.focus td[data-trend="up"] {
+  background: color-mix(in srgb, var(--red) 24%, var(--card));
+}
+.hybrid-host-trajectory table.data-table tbody tr.focus td[data-trend="flat"] {
+  background: color-mix(in srgb, var(--muted) 24%, var(--card));
+}
+.hybrid-host-trajectory table.data-table tbody tr.focus td[data-moved] {
+  outline: 2px solid var(--navy);
+  outline-offset: -2px;
+}
+/* The Blend tab: the blend of the target film with its numbers in it, over the weights grid (it may wrap on a narrow panel); the grid's label column is as wide as its labels and they wrap, so
+   "α* closed-form weights" and a whole film title are read in full (the column's width is heat-grid.js `labelMax`, measured when the tab opens). */
+.hybrid-host-blendline {
+  flex: none;
+}
+.hybrid-blend-line {
+  padding: 2px 4px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.hybrid-host-profile .heat-rowlabel {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+.hybrid-host-profile .heat-title-name,
+.hybrid-host-profile .heat-row-sub {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+/* the Parameters panel: the base recommenders as a row of check boxes, one caption over them (the caption is the app's `.param-field > span`) */
+.hybrid-bases {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  min-height: 26px; /* the height of the segmented controls beside it */
+}
+.hybrid-base {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+/* ── WP-222b: the switching hybrid's walk page (`#/combine?m=switching`): the strip Bases | Leaderboard | Answer. Bases is the weighted walk's; Leaderboard = the bars of every base's two errors
+   (components/hybrid-board.js) over the leaderboard table; Answer = the answers table. The two bar series wear the page's navy and maroon mixed towards the card: the plain tokens are too deep
+   for a fill in the light theme and too pale in the dark one (checked for colour-vision separation in both themes with the mixes below: dE >= 15 for the common deficiencies). The winner is a
+   pill and a bold name, never a colour alone; the coverage bar's two segments are neutral greys that carry the base's name and count. ── */
+/* WP-222b: the tokens live on the board that wears them (every bar and swatch is inside it), so no selector of this file leaves the hybrid namespace */
+.hybrid-board {
+  --hybrid-bar-mae: color-mix(in srgb, var(--maroon) 75%, var(--card));
+  --hybrid-bar-rmse: color-mix(in srgb, var(--navy) 75%, var(--card));
+}
+[data-theme="dark"] .hybrid-board {
+  --hybrid-bar-mae: color-mix(in srgb, var(--maroon) 80%, var(--card));
+  --hybrid-bar-rmse: color-mix(in srgb, var(--navy) 80%, var(--card));
+}
+.hybrid-host-board {
+  flex: none; /* the bars keep their own height, the leaderboard table under them takes the rest; a long list of bases scrolls inside */
+  max-height: 62%;
+  overflow: auto;
+}
+.hybrid-host-leaderboard,
+.hybrid-host-answers {
+  flex: 1 1 0;
+}
+.hybrid-board {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 2px 0 4px;
+}
+.hybrid-board-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 14px;
+  font-size: 11px;
+  color: var(--strong);
+}
+.hybrid-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.hybrid-legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+.hybrid-legend-swatch.mae,
+.hybrid-bar.mae {
+  background: var(--hybrid-bar-mae);
+}
+.hybrid-legend-swatch.rmse,
+.hybrid-bar.rmse {
+  background: var(--hybrid-bar-rmse);
+}
+.hybrid-bar-row {
+  display: grid;
+  grid-template-columns: 7.5em 1fr;
+  column-gap: 8px;
+  row-gap: 2px;
+  align-items: center;
+  padding: 1px 4px;
+  border-radius: var(--r);
+  font-size: 11.5px;
+}
+.hybrid-bar-row[hidden],
+.hybrid-coverage[hidden],
+.hybrid-coverage-seg[hidden] {
+  display: none; /* the author rules above would otherwise beat the attribute */
+}
+.hybrid-bar-row.is-focus {
+  background: color-mix(in srgb, var(--navy) 8%, transparent); /* the row the step is about, as the table's focused row */
+}
+.hybrid-bar-label {
+  grid-row: 1 / span 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  color: var(--ink);
+  font-weight: var(--fw-label);
+}
+.hybrid-bar-row.is-winner .hybrid-bar-name {
+  color: var(--navy);
+  font-weight: var(--fw-heading, 600);
+}
+.hybrid-bar-pill {
+  font-size: 10px;
+  line-height: 1.4;
+}
+.hybrid-bar-row.is-winner .hybrid-bar-pill {
+  background: var(--navy);
+  color: var(--on-navy);
+}
+.hybrid-bar-row.is-right .hybrid-bar-pill {
+  border: 1px solid var(--amber-line);
+  background: var(--amber-bg);
+  color: var(--amber-ink); /* the right way's best, marked beside the foil's winner in the foil's own amber */
+}
+.hybrid-bar-line {
+  display: grid;
+  grid-template-columns: 1fr 4.6em;
+  align-items: center;
+  column-gap: 6px;
+}
+.hybrid-bar-track {
+  height: 8px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--line) 55%, transparent); /* the unit: the largest error of the run is a full track */
+  overflow: hidden;
+}
+.hybrid-bar {
+  height: 100%;
+  min-width: 2px;
+  border-radius: 0 4px 4px 0; /* rounded at the data end, square on the baseline */
+  transition: width 0.25s ease;
+}
+.hybrid-bar-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--strong);
+}
+.hybrid-bar-row.is-rule {
+  margin-top: 3px;
+  padding-top: 4px;
+  border-top: 1px dashed var(--line);
+}
+.hybrid-coverage {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--strong);
+}
+.hybrid-coverage-track {
+  display: flex;
+  gap: 2px; /* a card-coloured gap between the two segments */
+  height: 18px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.hybrid-coverage-seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 10.5px;
+  font-weight: var(--fw-label);
+}
+.hybrid-coverage-seg.cf {
+  background: var(--strong);
+  color: var(--card);
+}
+.hybrid-coverage-seg.cb {
+  background: var(--line);
+  color: var(--ink);
+}
+/* the Parameters panel of the switching walk: the controls of the rule that is not chosen are hidden (components/hybrid-params.js `byRule`) */
+.hybrid-switch-form .param-field[hidden] {
+  display: none;
+}
+/* WP-239: the selection rules the literature uses and the lab does not have, under "Winner by" (components/hybrid-params.js `placeholders`): the app's switched-off chip (faded, `not-allowed`
+   cursor, its tip readable), dashed so that they read as options that are not there; they wrap under the real choice, so the field keeps its height (the bases column beside it is taller) */
+.hybrid-switch-form .param-placeholders {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+.hybrid-switch-form .param-placeholder {
+  border: 1px dashed var(--line);
+  border-radius: var(--r);
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.25;
+  padding: 3px 7px;
+  white-space: nowrap;
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* WP-232: the seven types' detail blocks under the table - nested collapsible panels (the app's own `.panel` with its caret), closed at first, a little quieter than the section that holds them */
+.hybrid-type-details {
+  display: grid; /* WP-232b: open cards, two to a row (one column on a narrow window); the seven follow the table's order, the last one stands alone */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 12px 0 6px;
+}
+@media (max-width: 900px) {
+  .hybrid-type-details {
+    grid-template-columns: minmax(0, 1fr); /* WP-232b */
+  }
+}
+.hybrid-type-detail {
+  margin: 0; /* WP-232b: the grid's gap spaces the cards */
+}
+.hybrid-type-detail .panel-head h3 {
+  font-size: 0.95em;
+}
+.hybrid-detail-text p,
+.hybrid-detail-text ul {
+  margin: 0 0 0.55em;
+}
+.hybrid-detail-text li {
+  margin: 0 0 0.3em;
+}
+.hybrid-detail-link {
+  margin: 0.2em 0 0;
+}

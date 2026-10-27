@@ -1,0 +1,93 @@
+/* WP-12b: the stage and the chrome of a content slide (D-059, D-061, D-069, D-071). Geometry is the A+B prototype's, measured in
+   runs/2610221919-ui-cover-v4/ and re-measured on this stylesheet in runs/<stamp>-ui-chrome/. Every colour comes from a token that the build writes
+   into <style id="savo-theme"> (WP-12a; names: docs/design-brief.md section 4, kebab-case): --ground --ink --ink-soft --title --chrome --section
+   --done --todo --cur, and the font roles --f-title --f-section-title --f-page-number --f-caption --f-body. There is NO colour literal in
+   engine/css/** (tests/js/chrome-css.test.mjs); a colour that is not a token is a color-mix() of tokens.
+
+   Two tokens are not in the WP-12a list yet and are requested in the WP-12b report: --emblem-ground (the white disc behind the emblem) and,
+   for the student build, --surround (the colour around the stage, controls.css). Until the build writes them the disc is transparent.
+   Units: stage pixels. The stage is 1920 x 1080 and the player scales it with --stage-scale (WP-12c). */
+
+.savo-stage, .savo-stage *, .savo-chrome, .savo-chrome * { box-sizing: border-box; }
+
+/* The stage: the box every slide is drawn on. The player sets --stage-scale = (window width / 1920) on the stage's parent or on the stage. */
+.savo-stage {
+  position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden;
+  transform-origin: 0 0; transform: scale(var(--stage-scale, 1));
+  background: var(--ground); color: var(--ink); font-family: var(--f-body); font-size: 36px; line-height: 1.42;
+}
+.savo-stage .savo-chrome { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; margin: 0; pointer-events: none; z-index: 10; }
+.savo-chrome { --rule-mix: 16%; }
+:root[data-theme="dark"] .savo-chrome { --rule-mix: 18%; }
+
+/* ---------- top strip ----------
+   left 60, right 60, top 26, height 112 with 4 px padding below and a 1 px rule: the content box is 107 px, so the 92 px emblem sits at y 33.5
+   and the 84 px S at y 37.5, exactly as in the prototype (there the rule was written 1.5px, which computes to 1px at devicePixelRatio 1;
+   written 1px here so the boxes are the same at any ratio). Cover and closing have no such strip (WP-14, WP-19) and no small S (D-071). */
+.savo-topbar {
+  position: absolute; left: 60px; right: 60px; top: 26px; height: 112px; padding-bottom: 4px; margin: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--chrome) var(--rule-mix), transparent);   /* taste-skill-ignore: the thin rule under the top strip is a user decision (D-059) */
+  display: flex; align-items: center; justify-content: space-between;
+}
+.savo-emblem { display: grid; place-items: center; flex: none; width: 92px; height: 92px; border-radius: 50%; background: var(--emblem-ground, transparent); }
+.savo-emblem img { display: block; width: 84px; height: 84px; }
+.savo-mark { display: block; height: 84px; width: auto; flex: none; }
+.savo-section {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); margin: 0;
+  font: 600 32px/1 var(--f-section-title); color: var(--section); white-space: nowrap;
+}
+.savo-section .savo-num { color: var(--chrome); margin-right: 12px; }
+
+/* ---------- footer ----------
+   One line on the bottom edge (D-061): the source on the left, then the progress block and the page number on the right.
+   The source and the page number share their LAST BASELINE (align-self: last baseline), so the baselines are equal whatever the font
+   metrics are (prototype: padding-bottom 1.6px tuned by hand, 0.02 px apart). The progress block is centred on the INK of the page number
+   (D-069): the svg is 50 px high and its drawn extent (0 to 49.3, centre 24.65) is placed on the ink centre of the number by sitting 2 px
+   below the footer's bottom edge (margin-bottom -2px; the number's own box is flush with that edge, so its baseline is 8 px and its ink centre 23.5 px
+   above it). That ties the block to the number's font metrics: it was measured with the vendored Archivo, and the harness re-measures it. */
+.savo-foot { position: absolute; left: 60px; right: 60px; bottom: 14px; height: 64px; margin: 0; display: flex; align-items: flex-end; justify-content: flex-end; }
+/* D-072: a rule above the whole footer band on content slides, the same line as under the top strip: 1 px, the same colour (--chrome at --rule-mix),
+   the same width (left 60, right 60). It lies 5 px below the footer box's top, stage y 1007 to 1008: 10 px above the progress block's top (1018), 17 above
+   the page number's ink (1025) and the source line (measured in runs/2610222030-ui-chrome/). The progress block has no line of its own (D-069); this one belongs to
+   the band. The cover and the closing page have no footer and no such rule. */
+.savo-foot-rule { position: absolute; left: 0; right: 0; top: 5px; height: 0; margin: 0; pointer-events: none;
+  border-top: 1px solid color-mix(in srgb, var(--chrome) var(--rule-mix), transparent); }   /* taste-skill-ignore: the rule above the footer is a user decision (D-072) */
+.savo-src {
+  align-self: last baseline; margin: 0 auto 0 0; padding: 0; flex: 0 1 auto; min-width: 0;
+  font: 600 22px/1.2 var(--f-caption); color: var(--chrome); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;          /* a long source is cut with an ellipsis before the progress block; the shared baseline is unchanged (measured) */
+}
+.savo-prog { display: block; flex: none; margin: 0 30px -2px 24px; }      /* 24 px is the least air between the source and the block; free space goes to the source's auto margin */
+.savo-pageno {
+  align-self: last baseline; flex: none; margin: 0; padding: 0;
+  font: 700 46px/1 var(--f-page-number); color: var(--title); font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+/* The digits are weight 900. design-brief section 3 says "Archivo 700", but in the prototype the <b> inside a 700 box computes to 900 (the browser's
+   "bolder"), and that is the page number the user saw and approved (D-069, "şu an A+B ile gördüğüm iyi"). Written as 900 so it does not depend on the element. */
+.savo-pageno b { font-weight: 900; }
+.savo-pageno span { font-size: 26px; font-weight: 500; color: var(--ink-soft); margin-left: 6px; }
+
+/* ---------- progress (D-069): colours only; every size is an attribute written by progress.js from layout.js ---------- */
+.savo-prog .savo-ring[data-state="done"] { fill: var(--done); }
+.savo-prog .savo-ring[data-state="cur"] { fill: var(--ground); stroke: var(--cur); }
+.savo-prog .savo-ring[data-state="todo"] { fill: var(--ground); stroke: var(--todo); }
+.savo-prog .savo-dot { fill: var(--cur); }
+/* the tick is knocked out of the green disc in the ground colour: no white literal; it keeps 3.5:1 on --done in the light theme and 5.2:1 in the dark one */
+.savo-prog .savo-tick { fill: none; stroke: var(--ground); stroke-linecap: round; stroke-linejoin: round; }
+.savo-prog .savo-pill[data-state="done"] { fill: var(--done); }
+.savo-prog .savo-pill[data-state="cur"] { fill: var(--cur); }
+.savo-prog .savo-pill[data-state="todo"] { fill: none; stroke: var(--todo); }
+/* WP-60 (D-143): on the student's page every pill is a link to its slide (progress.js). The chrome layer lets clicks through to the slide (pointer-events: none
+   above), so the links take them back; the hit area is an invisible rect the width of the pill's column (pointer-events: all ignores its missing fill).
+   Hover fills an open pill and outlines a filled one; keyboard focus outlines the column in the section colour. No transition: a running one inside the
+   deck root would count as one of the engine's own animations. */
+.savo-prog .savo-pill-link { pointer-events: auto; cursor: pointer; outline: none; }
+.savo-prog .savo-pill-hit { fill: none; stroke: none; pointer-events: all; }
+.savo-prog .savo-pill-link:hover .savo-pill[data-state="todo"] { fill: var(--todo); }
+.savo-prog .savo-pill-link:hover .savo-pill[data-state="done"], .savo-prog .savo-pill-link:hover .savo-pill[data-state="cur"] { stroke: var(--title); stroke-width: 1.6; }
+.savo-prog .savo-pill-link:focus-visible .savo-pill-hit { stroke: var(--section); stroke-width: 2; }
+
+/* ---------- watermark: a config option, not part of the default content slide (D-061: the small S top right is enough) ---------- */
+.savo-watermark { position: absolute; pointer-events: none; opacity: .06; }
+.savo-watermark[data-pos="center"] { left: 50%; top: 50%; height: 720px; transform: translate(-50%, -50%); }
+.savo-watermark[data-pos="corner"] { right: -120px; bottom: -60px; height: 420px; }

@@ -1,0 +1,36 @@
+/* WP-12b: the semantic roles of running text (D-009, D-014) and their non-colour cues (D-017, D-068).
+   Text fragments carry <span data-role="key|term|emph|pos|neg|ex"> (docs/DECK_SCHEMA.md section 7). Colours are tokens only:
+   --key --key-band --key-band-ink --term --emph --pos --neg --ex (docs/design-brief.md section 4.2).
+
+   Gold (`key`) is INK in both themes (D-074, which replaced the dark theme's marker of D-014): bold text in --key, #8B5F00 on the light ground,
+   #F5C542 on the dark one (10.51:1). The marker survives as an option: `data-key-style="marker"` on <html> (config semantics.key) paints the whole
+   text box in --key-band with --key-band-ink, in either theme. The marker paints the whole box, not part of it: in a partial band the tops of the
+   letters fell onto the ground (palette-check section 3.8). It is a flat background colour, no gradient. Without the attribute no theme uses it.
+
+   Cues are OFF by default (D-068). `<html data-cues="on">` turns them on: term = dotted underline, positive = plain underline,
+   negative = wavy underline, example = italic. Gold and blue have no cue (they do not collapse in colour blindness: palette-check Table 22).
+   A cue is a text-decoration or a style, never a colour, so it survives a grey-scale print. The console sets data-cues on its own root, the
+   audience and the preview follow the console, the student page follows its button (WP-12c). */
+
+[data-role] { font-weight: 600; }
+[data-role="key"] { color: var(--key); font-weight: 700; }
+[data-role="term"] { color: var(--term); }
+[data-role="emph"] { color: var(--emph); }
+[data-role="pos"] { color: var(--pos); }
+[data-role="neg"] { color: var(--neg); }
+[data-role="ex"] { color: var(--ex); }
+
+:root[data-key-style="marker"] [data-role="key"] {
+  color: var(--key-band-ink); background-color: var(--key-band); padding: 0 .2em; border-radius: .14em;
+  -webkit-box-decoration-break: clone; box-decoration-break: clone;
+}
+
+:root[data-cues="on"] [data-role="term"],
+:root[data-cues="on"] [data-role="pos"],
+:root[data-cues="on"] [data-role="neg"] {
+  text-decoration-line: underline; text-decoration-thickness: .09em; text-underline-offset: .18em; text-decoration-skip-ink: none;
+}
+:root[data-cues="on"] [data-role="term"] { text-decoration-style: dotted; text-decoration-thickness: .12em; }
+:root[data-cues="on"] [data-role="pos"] { text-decoration-style: solid; }
+:root[data-cues="on"] [data-role="neg"] { text-decoration-style: wavy; text-underline-offset: .22em; }
+:root[data-cues="on"] [data-role="ex"] { font-style: italic; }

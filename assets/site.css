@@ -1,0 +1,187 @@
+/* savo-slides-publisher: the site's own pages after the w06 cover (D-135, D-139, D-140 and D-141 of savo-slides).
+   Colours are the deck theme's (savo-slides config/themes): the card and the information band follow the page theme (light #243078 / #1A2363,
+   dark #18205C / #111843), and the text uses the cover's dark set in both themes, as on the cover. The network (seed 5, 64 nodes) and the
+   faint S are the cover's. Fonts are the deck's: Archivo for display text (the cover title: weight 700, stretch 112 %), Source Sans 3 for the
+   rest (OFL, vendored, no CDN).
+   Sizes: --u is 1 % of the largest 16:9 frame that fits the window, the cover's stage scaled to fit (min(1vw, 1.778vh); 1u = 19.2 stage px).
+   Every vertical size is in u, so a page that fits the 16:9 frame fits the screen without scrolling, on a wide and on a short window alike
+   (D-141: the home page scrolled at 1890 x 905). Horizontal gutters stay in vw. */
+
+@font-face {
+  font-family: "Archivo"; font-style: normal; font-weight: 100 900; font-stretch: 62% 125%; font-display: swap;
+  src: url("fonts/archivo/archivo-latin-ext-standard-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Archivo"; font-style: normal; font-weight: 100 900; font-stretch: 62% 125%; font-display: swap;
+  src: url("fonts/archivo/archivo-latin-standard-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Source Sans 3"; font-style: normal; font-weight: 200 900; font-display: swap;
+  src: url("fonts/source-sans-3/SourceSans3VF-Upright.ttf.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Source Sans 3"; font-style: italic; font-weight: 200 900; font-display: swap;
+  src: url("fonts/source-sans-3/SourceSans3VF-Italic.ttf.woff2") format("woff2");
+}
+
+:root {
+  color-scheme: dark;            /* the card is navy in both themes: scroll bars and controls stay dark */
+  --card: #243078;
+  --band: #1A2363;
+  --qr-ground: #FFFFFF;
+  --emblem-ground: #FFFFFF;
+  --ink: #E2E7F8;
+  --ink-soft: #A3AED6;
+  --title: #EAF0FF;
+  --chrome: #C6D0F2;
+  --section: #5ED6E0;
+  --kicker: #F5C542;
+  --f-title: "Archivo", "Arial Narrow", Arial, sans-serif;
+  --f-body: "Source Sans 3", "Segoe UI", Arial, sans-serif;
+  --u: min(1vw, 1.7778vh);
+  --gutter: clamp(16px, 3.3vw, 64px);
+  --indent: clamp(0px, 2.5vw, 48px);
+  --rail: 56px;                  /* the deck's control column at the right edge (savo-slides engine/css/controls.css) */
+}
+/* Light unless the reader chose dark, whatever the system says: the decks and the course guide do the same (the classroom projector
+   default is light). site.js keeps data-theme on <html>; the choice is shared with the decks (?theme=) and the guide (its storage key). */
+:root[data-theme="dark"] { --card: #18205C; --band: #111843; }
+
+*, *::before, *::after { box-sizing: border-box; }
+html { background: var(--card); -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { margin: 0; background: var(--card); color: var(--ink); font: 400 1.125rem/1.45 var(--f-body); }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--kicker); outline-offset: 3px; border-radius: 6px; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* one language on screen: site.js sets <html lang>; each text pair is two spans of class l */
+:root[lang="en"] .l[lang="tr"], :root[lang="tr"] .l[lang="en"] { display: none !important; }
+
+/* ---------- the card ---------- */
+.card { position: relative; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; overflow: hidden; isolation: isolate; }
+.net { position: absolute; left: 0; top: 0; width: 100%; height: 100%; object-fit: cover; object-position: left top; z-index: -1; pointer-events: none; }
+.mark { position: absolute; right: 1.6vw; top: 0; height: clamp(240px, calc(41.7 * var(--u)), 800px); width: auto; opacity: .08; z-index: -1; pointer-events: none; }
+
+/* the top strip of a course page: the emblem and the institution where the cover has them; on the 404 page the site's own lockup */
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: clamp(10px, calc(1 * var(--u)), 26px) max(var(--gutter), calc(var(--rail) + 8px)) 0 var(--gutter); }
+.lockup { display: flex; align-items: center; gap: clamp(12px, calc(1.25 * var(--u)), 24px); color: inherit; text-decoration: none; min-width: 0; }
+.emblem { flex: none; width: clamp(44px, calc(4.4 * var(--u)), 88px); aspect-ratio: 1; border-radius: 50%; background: var(--emblem-ground); display: grid; place-items: center; }
+.emblem img { width: 91.3%; height: 91.3%; display: block; }       /* the cover's 84 px emblem on its 92 px disc */
+.logo-mark { flex: none; width: clamp(44px, calc(4.2 * var(--u)), 80px); height: auto; display: block; }
+.identity { display: flex; flex-direction: column; min-width: 0; }
+.site-name { font: 700 clamp(1rem, calc(1.35 * var(--u)), 1.6rem)/1.15 var(--f-title); color: var(--title); letter-spacing: -.005em; }
+.tagline { font: 600 clamp(.85rem, calc(1.15 * var(--u)), 1.375rem)/1.32 var(--f-body); color: var(--chrome); }
+.lockup:hover .site-name { text-decoration: underline; text-underline-offset: .15em; }
+/* the institution as on the cover (600 22px/1.32 of 1920) */
+.institution { display: flex; flex-direction: column; min-width: 0; font: 600 clamp(.8rem, calc(1.15 * var(--u)), 1.375rem)/1.32 var(--f-body); color: var(--chrome); }
+.inst-line { display: block; }
+
+/* ---------- the display controls: the deck's rail (D-073) in the same place, always shown here ----------
+   The deck: a 56 px column at the right edge, the panel centred in it, segments of 36 px pill buttons (EN | TR, sun | half moon), revealed
+   when the pointer comes near. Here it never hides, so a reader learns where the deck keeps it. Colours follow the navy card: a deeper
+   panel, a tinted track, the chosen option gold on navy (the deck: --title on --ground). Without a script nothing can switch, so nothing shows. */
+.rail { position: fixed; top: 0; right: 0; bottom: 0; width: var(--rail); z-index: 20; display: none; align-items: center; justify-content: center; pointer-events: none; }
+.js .rail { display: flex; }
+.rail-panel { pointer-events: auto; display: flex; flex-direction: column; gap: 8px; padding: 6px 4px; border-radius: 22px;
+  background: color-mix(in srgb, var(--band) 88%, black); border: 1px solid color-mix(in srgb, var(--chrome) 22%, transparent); }
+.seg { display: inline-flex; flex-direction: column; padding: 2px; border-radius: 20px; background: color-mix(in srgb, var(--chrome) 12%, transparent); }
+.seg button { display: inline-flex; align-items: center; justify-content: center; min-width: 36px; min-height: 36px; padding: 0; margin: 0; border: 0; border-radius: 999px;
+  background: transparent; color: var(--chrome); font: 600 14px/1 var(--f-body); letter-spacing: .03em; cursor: pointer; }
+.seg button:hover { color: var(--title); }
+.seg button[aria-pressed="true"] { background: var(--kicker); color: var(--band); font-weight: 800; }
+.seg button:focus-visible { outline: 3px solid var(--section); outline-offset: 2px; }
+.seg svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+@media (pointer: coarse) { .seg button { min-width: 40px; min-height: 40px; } }
+
+/* ---------- the middle: where the cover has the course and the title ---------- */
+.mid { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: clamp(16px, calc(2.6 * var(--u)), 56px);
+  padding: clamp(16px, calc(2.6 * var(--u)), 64px) max(var(--gutter), calc(var(--rail) + 8px)) clamp(18px, calc(2.8 * var(--u)), 72px) calc(var(--gutter) + var(--indent)); }
+.course, .lead { display: flex; flex-direction: column; }
+.code { margin: 0 0 clamp(8px, calc(1 * var(--u)), 20px); font: 500 clamp(.85rem, calc(1.25 * var(--u)), 1.5rem)/1 var(--f-title);   /* room for the dots of a Turkish Ö or İ in the big line below */ color: var(--chrome); letter-spacing: .04em; font-variant-numeric: tabular-nums; }
+.code .inst-short { font-family: var(--f-body); letter-spacing: 0; margin-left: .6em; color: var(--ink-soft); }
+/* the cover's big title (150 px of 1920: 7.8u); here a little smaller, because a link list follows it */
+.big { margin: 0; max-width: 18ch; font-family: var(--f-title); font-stretch: 112%; font-weight: 700; font-size: clamp(2.1rem, calc(6.2 * var(--u)), 7.5rem); line-height: .92; letter-spacing: -.035em; color: var(--kicker); text-wrap: balance; overflow-wrap: break-word; }
+.big a { text-decoration: none; }
+.big a:hover { text-decoration: underline; text-decoration-thickness: .05em; text-underline-offset: .1em; }
+/* the second level carries a list under its title: a course name runs to two lines in English, so the title is a size smaller and the
+   sections closer, which keeps a course page with a guide and a term on one screen (measured: 70 px over at 1890 x 905 before) */
+body[data-page="course"] .big, body[data-page="term"] .big { font-size: clamp(2rem, calc(5.2 * var(--u)), 6.25rem); }
+body[data-page="course"] .mid, body[data-page="term"] .mid { gap: clamp(10px, calc(2 * var(--u)), 44px);
+  padding-top: clamp(10px, calc(2.2 * var(--u)), 56px); padding-bottom: clamp(12px, calc(2 * var(--u)), 56px); }
+/* the home page's line under its name: the cover's subtitle slot (600 62px of 1920) */
+.subline { margin: clamp(8px, calc(1.25 * var(--u)), 24px) 0 0; max-width: 40ch; font: 600 clamp(1.15rem, calc(2.6 * var(--u)), 3.25rem)/1.12 var(--f-title); letter-spacing: -.012em; color: var(--title); }
+
+/* the way back home on the second-level pages */
+.crumbs ol { list-style: none; margin: 0 0 clamp(6px, calc(.9 * var(--u)), 18px); padding: 0; display: flex; flex-wrap: wrap; gap: 4px 0; font: 600 clamp(.9rem, calc(1 * var(--u)), 1.15rem)/1.3 var(--f-body); color: var(--chrome); }
+.crumbs li + li::before { content: "›"; margin: 0 .55em; color: var(--ink-soft); }
+.crumbs li:first-child::before { content: "←"; margin-right: .45em; }
+.crumbs a { text-decoration: none; }
+.crumbs a:hover { text-decoration: underline; text-underline-offset: .15em; color: var(--title); }
+
+/* the home page's courses: one card each, a link to the course page */
+.courses { display: flex; flex-direction: column; gap: clamp(8px, calc(.75 * var(--u)), 14px); }
+.cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 30rem), 1fr)); gap: clamp(10px, calc(1.2 * var(--u)), 20px); max-width: 76rem; }
+.card-link { display: flex; flex-direction: column; gap: clamp(3px, calc(.35 * var(--u)), 6px); height: 100%; padding: clamp(12px, calc(1.4 * var(--u)), 26px) clamp(16px, calc(1.6 * var(--u)), 28px); border-radius: 16px; text-decoration: none; background: color-mix(in srgb, var(--band) 78%, transparent); border: 1px solid color-mix(in srgb, var(--chrome) 18%, transparent); }
+.card-link:hover { border-color: color-mix(in srgb, var(--kicker) 75%, transparent); }
+.card-link:hover .card-title { text-decoration: underline; text-underline-offset: .15em; }
+.card-code { font: 500 clamp(.8rem, calc(1 * var(--u)), 1.15rem)/1 var(--f-title); color: var(--chrome); letter-spacing: .04em; font-variant-numeric: tabular-nums; }
+.card-title { font-family: var(--f-title); font-stretch: 106%; font-weight: 700; font-size: clamp(1.25rem, calc(2.1 * var(--u)), 2.5rem); line-height: 1.02; letter-spacing: -.02em; color: var(--kicker); text-wrap: balance; }
+.card-inst { font: 600 clamp(.85rem, calc(1 * var(--u)), 1.15rem)/1.3 var(--f-body); color: var(--ink-soft); }
+.card-meta { font: 600 clamp(.85rem, calc(1.05 * var(--u)), 1.2rem)/1.35 var(--f-body); color: var(--section); }
+
+.chips { list-style: none; margin: clamp(10px, calc(1.6 * var(--u)), 28px) 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px 12px; }
+.chip { display: inline-flex; align-items: center; min-height: 40px; padding: 6px 16px; border-radius: 999px; border: 1.5px solid color-mix(in srgb, var(--section) 60%, transparent); background: color-mix(in srgb, var(--card) 75%, transparent); color: var(--section); font: 600 clamp(.95rem, calc(1.25 * var(--u)), 1.45rem)/1.1 var(--f-title); text-decoration: none; }
+.chip:hover { background: color-mix(in srgb, var(--section) 16%, var(--card)); }
+
+.items { list-style: none; margin: clamp(10px, calc(1.6 * var(--u)), 28px) 0 0; padding: 0; display: grid; gap: clamp(6px, calc(.6 * var(--u)), 10px); max-width: 76rem; }
+.item { display: grid; grid-template-columns: minmax(10rem, 15rem) 1fr; column-gap: clamp(16px, calc(1.6 * var(--u)), 28px); align-items: baseline; padding: clamp(10px, calc(1 * var(--u)), 18px) clamp(14px, calc(1.2 * var(--u)), 22px); border-radius: 14px; text-decoration: none; background: color-mix(in srgb, var(--band) 78%, transparent); border: 1px solid color-mix(in srgb, var(--chrome) 16%, transparent); }
+.item:hover { border-color: color-mix(in srgb, var(--kicker) 70%, transparent); }
+.item:hover .what { text-decoration: underline; text-underline-offset: .15em; }
+.when { font: 600 clamp(.85rem, calc(1.05 * var(--u)), 1.2rem)/1.3 var(--f-body); color: var(--chrome); font-variant-numeric: tabular-nums; }
+.what { font: 600 clamp(1.05rem, calc(1.6 * var(--u)), 1.85rem)/1.18 var(--f-title); color: var(--title); letter-spacing: -.005em; }
+.sub { grid-column: 2; margin-top: 4px; font: 400 clamp(.9rem, calc(1.15 * var(--u)), 1.3rem)/1.35 var(--f-body); color: var(--ink-soft); }
+.more { margin: 12px 0 0; font: 600 1.05rem/1.3 var(--f-body); }
+.more a { color: var(--section); }
+.group { display: flex; flex-direction: column; }
+.group-title { margin: 0; font: 600 clamp(1.1rem, calc(1.77 * var(--u)), 2.125rem)/1.15 var(--f-title); color: var(--section); }
+.group-title a { text-decoration: none; }
+.group-title a:hover { text-decoration: underline; text-underline-offset: .15em; }
+.group-title .inst-short { margin-left: .6em; font: 600 .62em/1 var(--f-body); color: var(--ink-soft); }
+.group .items { margin-top: clamp(8px, calc(.75 * var(--u)), 12px); }
+.group .chips { margin-top: 0; }
+.note { margin: 0; max-width: 46rem; font: 400 clamp(1rem, calc(1.5 * var(--u)), 1.75rem)/1.4 var(--f-body); color: var(--title); }
+
+/* ---------- the information band: e-mail QR and author left, the page's own address and its QR right ---------- */
+.band { position: relative; background: var(--band); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 24px 48px;
+  padding: clamp(10px, calc(1.5 * var(--u)), 36px) max(calc(var(--gutter) + var(--indent)), calc(var(--rail) + 12px)) clamp(10px, calc(1.5 * var(--u)), 36px) calc(var(--gutter) + var(--indent)); }
+.qr-group { display: flex; align-items: center; gap: clamp(14px, calc(1.56 * var(--u)), 30px); min-width: 0; }
+.qr-site { flex-direction: row-reverse; text-align: right; }
+.qr-tile { flex: none; width: clamp(96px, calc(11 * var(--u)), 240px); aspect-ratio: 1; border-radius: clamp(8px, calc(.83 * var(--u)), 16px); overflow: hidden; background: var(--qr-ground); display: grid; place-items: center; }
+.qr-tile img, .qr-svg { display: block; width: 100%; height: 100%; }
+.qr-mail .qr-tile img { width: calc(100% * 37 / 41); height: calc(100% * 37 / 41); }   /* the user's PNG keeps ~2 modules of its own margin */
+.qr-modules { fill: var(--band); }                                                        /* D-078: the dark modules wear the band's colour */
+.who { margin: 0; font: 600 clamp(1.1rem, calc(1.98 * var(--u)), 2.375rem)/1.15 var(--f-title); color: var(--ink); }
+.mail { display: inline-block; margin-top: 4px; font: 400 clamp(.9rem, calc(1.35 * var(--u)), 1.625rem)/1.3 var(--f-body); color: var(--ink-soft); text-underline-offset: .18em; text-decoration-color: color-mix(in srgb, var(--ink-soft) 50%, transparent); }
+.mail:hover { color: var(--title); }
+.url { margin: 0; font: 600 clamp(.85rem, calc(1.25 * var(--u)), 1.5rem)/1.38 var(--f-body); color: var(--ink-soft); overflow-wrap: anywhere; }
+.url span { display: block; }
+
+/* a phone: the QR codes would point at the phone itself, so they go; the band stacks */
+@media (max-width: 720px) {
+  .qr-tile { display: none; }
+  .band { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .qr-site { flex-direction: row; text-align: left; }
+  .item { grid-template-columns: 1fr; row-gap: 2px; }
+  .sub { grid-column: 1; }
+  .tagline { display: none; }
+  .inst-line:not(:first-child) { display: none; }   /* the university stays; faculty and department wait for a wider screen */
+}
+@media (max-width: 380px) {
+  .site-name { font-size: 1rem; }
+}
+@media print {
+  .rail, .net, .mark { display: none !important; }
+}

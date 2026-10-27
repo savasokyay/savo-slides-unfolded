@@ -1,0 +1,152 @@
+/* WP-31: savoverse design tokens (docs/UI_STYLE.md). Light default; dark via [data-theme="dark"]. */
+:root {
+  --navy: #1a237e;
+  --maroon: #800000;
+  --surface: #f4f6f9;
+  --card: #ffffff;
+  /* WP-82: the two golds of the instructor's monogram (assets/imgLogo_SOkyay.png, sampled; WP-237a: the file lost its leading "_"):
+     inner bright gold and outer bronze - "signed-off" badges in the sidebar */
+  --gold-in: #e4b43c;
+  --gold-out: #9c7830;
+  /* WP-82 follow-up: badge of a signed-off TOP-LEVEL page, lighter than the inner gold (--gold-in blended ~30 % towards
+     white) so the hierarchy reads light -> gold top-down; user 2026-10-05. --gold-out is no longer used by a rule. */
+  --gold-top: #efcd6f;
+  /* WP-106: role colours, ONE definition for the whole app - users dark red, items blue. The RS tree board
+     (slides.css --bd-user / --bd-item) and the uCF / iCF matrix, chips and titles read these; the dark theme
+     takes --red's dark value for users and --c-item's own below. */
+  --c-user: var(--red);
+  --c-item: #1f6fd1;
+  /* WP-156: the tint of a film picker's row for a film the chosen user has rated (and its hover): the users' red, a tenth of it into the card - the film was rated BY the user. Ink on it is
+     10.9 : 1 light, 12.3 : 1 dark, the "raters" count (--strong) 6.4 : 1 / 9.8 : 1 (tests/app/test_picker_rating.py recomputes them from this file). */
+  --picker-rated: color-mix(in srgb, var(--c-user) 10%, var(--card));
+  --picker-rated-hover: color-mix(in srgb, var(--c-user) 18%, var(--card));
+  /* WP-132a: the item colour as TEXT on a matrix cell (the target film's cells, `.hl-target` in trace.css). The plain blue is 4.56 : 1 on the page ground and fell to 3.50 : 1 on
+     the tint of the active row / user column and 3.58 : 1 on a co-rated cell's green tint; this mix (the same 60 % text mix the labels use) reads >= 5.1 : 1 on all of them
+     (tests/app/test_heat_result_cell.py recomputes it). The dark theme's blue is light enough as it is (see the dark block). */
+  --c-item-ink: color-mix(in srgb, var(--c-item) 60%, var(--ink));
+  --line: #e0e0e0;
+  --ink: #333;
+  --strong: #555;
+  --muted: #888;
+  --green: #1a9d54;
+  --red: #c0392b;
+  /* WP-133: the pulse of the deliberate-mistake choice (`.miniseg button.is-fault.active`, trace.css): the two reds it alternates between and the ink it
+     carries at BOTH ends - each >= 4.5 : 1 (tests/app/test_fault_pulse.py recomputes it). Light: the app's red <-> a deep red, white ink. The dark theme's
+     --red is bright (white on it is 3.3 : 1), so there the ink is the dark ground and the second end is a lighter red. */
+  --fault-a: var(--red);
+  --fault-b: #8a1f16;
+  --fault-ink: #ffffff;
+  /* WP-132a: the ink the prediction cell (`.hl-result`, trace.css) wears on its --navy ground. Light: white on the deep navy. The dark theme's --navy is a light
+     periwinkle (white on it is 2.49 : 1), so there the ink is the page's own dark ground (= --surface there). >= 4.5 : 1 in both themes
+     (tests/app/test_heat_result_cell.py recomputes it). */
+  --on-navy: #ffffff;
+  /* WP-137a: the held-out `?` cell of the USER-based page is the focus entity's colour - the users' red - as a box and its light ink (the item-based page and the model pages keep the
+     navy / --on-navy pair above). Light: a dark red of the user colour (72 % of --c-user, the rest black) with white ink, 8.7 : 1. The dark theme's --c-user is a bright red, so there the
+     box is that red and the ink the page's own dark ground (= --surface there), 5.4 : 1 - the same inversion the navy pair makes (tests/app/test_heat_held_out.py recomputes both). */
+  --held-user: color-mix(in srgb, var(--c-user) 72%, #000000);
+  --on-held-user: #ffffff;
+  /* WP-232b: the term project's colour on the hybrid overview (the pill of the "Mixed" leaf and of its table row; the leaf's box keeps the other leaves' look): the saturated pure blue of the course's project sheet header (the instructor's choice), white ink on it, 8.6 : 1.
+     The dark theme lightens the blue and inverts the ink - the same inversion the navy pair makes (tests/app/test_hybrid_page.py recomputes both pairs, WCAG 2 relative luminance). */
+  --project-blue: #0000ff;
+  --on-project: #ffffff;
+  /* WP-132: the diverging scale of the centred sub-matrix cells (rating - centre): orange-brown below the centre, purple above, a neutral grey at zero, one hue per arm,
+     the arm's colour growing from the grey (`color-mix`, equal steps per arm - heat-grid.js sets the strength 0..1 on the cell). The two poles are the arms'
+     full strength, chosen so that (1) the cell ink (--ink) reads on every point of both arms: >= 4.5 : 1, (2) both poles sit at the same OKLab lightness (0.719 here), so
+     the two arms are equal steps away from the grey, (3) neither arm is a ROLE colour: the app already uses the users' red (--c-user), the films' blue (--c-item), the
+     co-rated green (--green) and the amber of the foil surfaces - the old red / blue arms were read as "user" and "film" (the hue gaps of the poles to those colours are
+     pinned in tests/app/test_heat_centred.py, which recomputes all of it, light and dark). Purple <-> orange also keeps its two arms apart for the common colour
+     vision deficiencies (CVD dE 18.9 protan / 19.9 deutan / 11.9-12.3 tritan, the sign in each cell is the second cue). */
+  --div-neg: #e08d5d;
+  --div-pos: #b98fde;
+  --div-mid: #f0efec;
+  /* the amber surfaces (warning strip, foil / flag pills, the amber-shaded cells of the worked examples): ink on bg, on the card and on the page ground are all >= 4.5 : 1
+     (measured with getComputedStyle, tests/app/test_amber_tokens.py pins it). The ink was #9a6b00 = 4.39 : 1 on its own ground and 4.33 : 1 on --surface. */
+  --amber-bg: #fff7e0;
+  --amber-line: #f0dca0;
+  --amber-ink: #8f6200;
+  --r: 4px;
+  --r-lg: 8px;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.14);
+  --header-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+  --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+  /* WP-105a: type tokens, the one place weights and the label size are defined. Body text and the labels of tables,
+     grids and chips are NOT bold (a bold film title in a 12 px rotated header is unreadable on a projector); the
+     heavier weight is for panel headings only. New rules use these instead of literal 400 / 500 / 600 / 700. */
+  --fw-body: 400; /* running text, column headers, cell text */
+  --fw-label: 500; /* row labels, the highlighted header, small captions that must stand out from body text */
+  --fw-heading: 600; /* panel headings */
+  --fs-label: 0.75rem; /* 12 px; rem, so it follows the presenting mode's 20 px root (15 px there) */
+  /* WP-107 (f): the Code panel's colours (util/py-highlight.js token classes). Each is at least 4.5:1 on the panel's own ground
+     (--surface) AND on the highlighted line (the navy tint over it), in both themes - measured, not guessed. */
+  --code-kw: #6f2da8; /* keywords: def, return, for, if, in ... */
+  --code-const: #a02060; /* True, False, None */
+  --code-str: #176131; /* strings (and docstrings) */
+  --code-com: #4f5963; /* comments */
+  --code-num: #8a4100; /* numbers */
+  --code-fn: #0b5394; /* the name a def / class introduces, decorators */
+}
+
+[data-theme="dark"] {
+  --surface: #14181c;
+  --card: #1c2128;
+  --line: #30363d;
+  --ink: #e9ecef;
+  --strong: #ced4da;
+  --muted: #adb5bd;
+  --navy: #8c9eff;
+  --maroon: #ff8a80;
+  --green: #00c853;
+  --red: #ff4757;
+  --fault-b: #ff7a85; /* WP-133: the lighter end of the pulse; the ink below is --surface's colour (dark on both ends) */
+  --fault-ink: #14181c;
+  --on-navy: #14181c; /* WP-132a: = --surface of this theme; on the periwinkle --navy 7.18 : 1 (white would be 2.49 : 1) */
+  --held-user: var(--c-user); /* WP-137a: this theme's red as the box (a dark red would sink into the dark ground), the dark ground as the ink: 5.4 : 1 */
+  --on-held-user: #14181c; /* = --surface of this theme */
+  --project-blue: #4d79ff; /* WP-232b: a lighter blue that still reads as the project sheet's blue on the dark ground (4.7 : 1 against it); its ink is the dark ground, 4.7 : 1 (white would be 3.8 : 1); the pill against the card it sits on 4.2 : 1 */
+  --on-project: #14181c; /* = --surface of this theme */
+  --div-neg: #934302; /* WP-132: the dark theme's poles - the same two hues at a deeper lightness (OKLab 0.48, the light theme's is 0.72) so that the light ink reads on them (5.8 : 1) */
+  --div-pos: #724695;
+  --div-mid: #383835;
+  --gold-top: #efcd6f; /* WP-82 follow-up: the same light gold on the dark sidebar (a dull brown there before) */
+  --amber-bg: #2e2410; /* a dark brown ground: the red text of a danger button reaches 4.57 : 1 on it, the ink 9.5 : 1 */
+  --amber-line: #7a621c;
+  --amber-ink: #f2c75c; /* light amber: 8-11 : 1 on its ground, the card and the page ground; the ground colour on it (a filled chip) 10 : 1 */
+  --c-item: #6aa7ff; /* WP-106: the item blue on the dark theme (= the board's --bd-item there); --c-user follows --red */
+  --c-item-ink: var(--c-item); /* WP-132a: as it is - >= 4.8 : 1 on every cell ground of this theme */
+  --code-kw: #d2a8ff; /* WP-107 (f): the Code panel's colours on the dark ground */
+  --code-const: #ff8fb8;
+  --code-str: #7ee787;
+  --code-com: #9aa4af;
+  --code-num: #ffa657;
+  --code-fn: #79c0ff;
+  --shadow-sm: none;
+  --shadow: none;
+  --shadow-md: none;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: 2px;
+}

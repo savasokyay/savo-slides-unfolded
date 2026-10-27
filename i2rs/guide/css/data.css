@@ -1,0 +1,224 @@
+/* WP-40: Data page (card, distributions, long-tail, cohort table, browse/profile, split preview).
+   Reuses .panel/.chip/.pill/.btn/.trace-form/.trace-summary/.picker-label from app.css/trace.css. */
+
+.data-page h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  color: var(--navy);
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 12px;
+}
+.mono {
+  font-family: var(--mono);
+}
+
+/* WP-95: the card is two inner panels side by side - the build facts (left) and the Caveats (right) */
+.data-card-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 16px;
+  align-items: start;
+}
+.data-card-grid.single {
+  grid-template-columns: minmax(0, 1fr);
+}
+.data-subpanel {
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+  padding: 10px 14px;
+  min-width: 0;
+}
+.data-subpanel h4 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--navy);
+}
+.data-subpanel ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.data-subpanel li + li {
+  margin-top: 4px;
+}
+.data-subpanel .data-repro {
+  margin: 0;
+}
+.panel-head:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: -2px;
+}
+
+.data-dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 0 0 10px;
+  font-size: 13px;
+}
+.data-dl dt {
+  color: var(--muted);
+}
+.data-dl dd {
+  margin: 0;
+}
+
+.data-repro {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 8px 10px;
+  font-family: var(--mono);
+  font-size: 12px;
+  overflow-x: auto;
+}
+
+/* WP-95: the Distributions row - four charts (rating values, ratings per user, raters per item, long tail) of one
+   height; each has a one-sentence caption of up to three lines (reserved, so the plots start at the same y). */
+.data-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+}
+.data-chart {
+  min-width: 0;
+}
+.data-chart h4 {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--strong);
+}
+.data-chart-note {
+  margin: 0 0 6px;
+  min-height: calc(3 * 1.35em);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+.data-chart-plot {
+  height: 190px;
+}
+.data-chart-plot.small {
+  height: 90px;
+}
+
+.data-table-plain {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.data-table-plain th,
+.data-table-plain td {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+.data-table-plain td.num,
+.data-table-plain th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.data-browse-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.data-profile {
+  margin-top: 10px;
+}
+.data-profile h5 {
+  margin: 0;
+  font-size: 13px;
+  color: var(--strong);
+}
+/* WP-95: "Ratings" and the Recent / Top / Bottom switch on one line, the switch right beside the title (not pushed
+   to the edge); its buttons have one fixed width, so choosing another order never moves anything */
+/* WP-96 (Browse): the user chip is navy with its own ink (--on-navy, WP-147) - a profile link inside it keeps that ink on hover
+   (the shared link hover colour is navy) and shows the link by its underline only */
+.data-profile .chip.on a.user-link:hover,
+.data-profile .chip.on a.user-link:focus-visible {
+  color: inherit;
+}
+.data-profile-bar {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 12px;
+  margin: 10px 0 4px;
+}
+.data-profile-bar .data-order {
+  flex: none;
+}
+.data-profile-bar .data-order button {
+  min-width: 72px;
+  text-align: center;
+}
+.data-lede {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.data-table-plain td.muted {
+  color: var(--muted);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.trace-form select {
+  font: inherit;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--card);
+  color: var(--ink);
+}
+
+/* WP-95: the profile list of Browse is a fixed-column grid - title | date | rating. The date has one width in every
+   row (YYYY-MM-DD with tabular digits), the rating is right-aligned, a long title is cut with an ellipsis (its
+   full text is the tooltip) instead of pushing the other two columns. */
+.data-ratings {
+  max-width: 44rem; /* a title and its date stay close together in a wide column */
+  table-layout: fixed;
+}
+.data-ratings col.dr-date {
+  width: 7rem;
+}
+.data-ratings col.dr-rating {
+  width: 3.2rem;
+}
+.data-ratings td.dr-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.data-ratings td.dr-date {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* WP-95 (8a): the ⓘ next to a panel / chart title is the app's shared `.help-tip` (app.css, util/info-tip.js);
+   this only places it beside the title text */
+.panel-head .help-tip,
+.data-chart h4 .help-tip {
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+@media (max-width: 1100px) {
+  .data-browse-grid,
+  .data-card-grid {
+    grid-template-columns: 1fr;
+  }
+}

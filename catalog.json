@@ -1,0 +1,73 @@
+{
+  "base_url": "https://savasokyay.github.io/savo-slides-unfolded/",
+  "courses": [
+    {
+      "code": "152117117",
+      "id": "i2rs",
+      "name": {
+        "en": "Introduction to Recommender Systems",
+        "tr": "Öneri Sistemlerine Giriş"
+      },
+      "path": "i2rs/",
+      "terms": [
+        {
+          "code": "2627f",
+          "label": {
+            "en": "2026–27 Fall",
+            "tr": "2026–27 Güz"
+          },
+          "path": "i2rs/2627f/"
+        }
+      ]
+    }
+  ],
+  "format": "savo-site-catalog",
+  "format_version": 1,
+  "items": [
+    {
+      "course": "i2rs",
+      "date": "2026-10-27",
+      "kind": "slides",
+      "languages": [
+        "en",
+        "tr"
+      ],
+      "path": "i2rs/2627f/w06-hybrid/",
+      "producer": "savo-slides",
+      "source_commit": "0578e2a07fc46c3bacb7d9986f4fe23db59747d1",
+      "subtitle": {
+        "en": "Combining recommenders: how, and when it pays off",
+        "tr": "Öneri sistemlerini birleştirmek: nasıl ve ne zaman kazandırır"
+      },
+      "term": "2627f",
+      "title": {
+        "en": "Ensemble-Based and Hybrid Recommender Systems",
+        "tr": "Hibrit ve Topluluk Öneri Sistemleri"
+      },
+      "url": "https://savasokyay.github.io/savo-slides-unfolded/i2rs/2627f/w06-hybrid/",
+      "version": "deck v0.1.22, engine v0.1.215_beta",
+      "week": 6
+    },
+    {
+      "course": "i2rs",
+      "date": null,
+      "kind": "guide",
+      "languages": [
+        "en",
+        "tr"
+      ],
+      "path": "i2rs/guide/",
+      "producer": "rs-lesson-material",
+      "source_commit": "ac6198ab307ba76ecd660d87a01c59caf34d2b5d",
+      "subtitle": null,
+      "term": null,
+      "title": {
+        "en": "Introduction to Recommender Systems · weekly topics",
+        "tr": "Öneri Sistemlerine Giriş · haftalık konular"
+      },
+      "url": "https://savasokyay.github.io/savo-slides-unfolded/i2rs/guide/",
+      "version": "v0.6.1115",
+      "week": null
+    }
+  ]
+}

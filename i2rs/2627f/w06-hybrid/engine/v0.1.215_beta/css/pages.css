@@ -1,0 +1,62 @@
+/* WP-15 (D-106): the look of the generated pages (engine/pages), so far the contents page (engine/pages/toc.js), the colophon (engine/pages/colophon.js) and, WP-19, the closing (engine/pages/closing.js);
+   the DOM contract of each is in the header of its file and in engine/README.md.
+   Rules as in content.css: tokens only, no colour literal; units are stage pixels (the stage is 1920 x 1080) and, inside a row, em; no motion (the contents page, the colophon and the closing are still). The heading is
+   the content layouts' own (`.savo-head`, `.savo-title` of content.css: the same place and type on every page). The rows' type size is inline (toc-model.js rowSizePx: the biggest the
+   room allows, at most 36 px), so everything inside a row is in em and follows it.
+   `--pg-badge-*` are the numbers of the AI badge that the BUILD measured it with (config pagination.badge, written into <style id="savo-theme">): the page draws the line in the box the
+   build checked it against; the fallbacks are the same numbers, for a page without the theme (the harness). */
+
+/* the rows: x 150 to 1770, from y 300 down; the badge line stands at y 944, above the footer band (y 1007) */
+.savo-toc-rows { position: absolute; left: 150px; top: 300px; width: 1620px; margin: 0; padding: 0; list-style: none; color: var(--ink); font-family: var(--f-body); line-height: 1.3; }
+.savo-toc-row { margin: 0 0 0.4em; padding: 0; }
+.savo-toc-row:last-child { margin-bottom: 0; }
+
+/* one row = number | title | leader | page; each part has its own column, so a section without a number leaves the column empty and the titles keep their x */
+.savo-toc-link { display: grid; grid-template-columns: 2.2em auto 1fr auto; column-gap: 0.5em; align-items: baseline; margin: 0; padding: 0; color: inherit; text-decoration: none; }
+.savo-toc-num { grid-column: 1; font-family: var(--f-page-number); font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; color: var(--section); }
+.savo-toc-title { grid-column: 2; min-width: 0; font-weight: 600; color: var(--ink); }
+.savo-toc-lead { grid-column: 3; align-self: end; min-width: 1.5em; margin: 0 0.3em 0.32em; border-bottom: 0.08em dotted var(--ink-soft); }
+.savo-toc-page { grid-column: 4; font-family: var(--f-page-number); font-weight: 400; font-variant-numeric: tabular-nums; text-align: right; color: var(--ink-soft); }
+
+/* the student's page: a row is a link (the audience window has none) */
+a.savo-toc-link:hover .savo-toc-title { text-decoration: underline; text-decoration-thickness: 0.06em; text-underline-offset: 0.18em; }
+a.savo-toc-link:focus-visible { outline: 3px solid var(--section); outline-offset: 6px; border-radius: 6px; }
+
+/* the AI badge: one line under the rows, in the box the build checked it against; a text wider than the box runs out to the right (fail loudly: a measurement sees it, nothing clips it) */
+.savo-toc-badge { position: absolute; left: 150px; top: 944px; width: var(--pg-badge-width, 1620px); margin: 0; padding: 0; font-family: var(--pg-badge-font, var(--f-caption)); font-weight: var(--pg-badge-weight, 400); font-size: var(--pg-badge-size, 24px); line-height: 1.3; white-space: nowrap; color: var(--ink-soft); }
+
+/* WP-18 (DECK_SCHEMA 7.1, D-110): the colophon (engine/pages/colophon.js). One grid at x 150, y 300, 1620 px wide: the author, the licence and the version in the left column (640 px), the AI
+   statement with its models and roles in the right column beside all three, and the citation under both across the whole width. Body 28 px, labels 22 px, the citation 24 px. Nothing is
+   clipped: a block that is taller than its room runs down and a measurement sees it (harness row k38 holds the worst case, with the real texts, in both languages, above the footer band at y 1007). */
+.savo-colo { position: absolute; left: 150px; top: 300px; width: 1620px; margin: 0; padding: 0; display: grid; grid-template-columns: 640px 1fr; column-gap: 110px; row-gap: 30px; align-items: start; color: var(--ink); font-family: var(--f-body); font-size: 28px; line-height: 1.4; }
+.savo-colo-block { margin: 0; padding: 0; min-width: 0; }
+.savo-colo-author { grid-column: 1; grid-row: 1; }
+.savo-colo-license { grid-column: 1; grid-row: 2; }
+.savo-colo-version { grid-column: 1; grid-row: 3; }
+.savo-colo-ai { grid-column: 2; grid-row: 1 / span 3; }
+.savo-colo-cite { grid-column: 1 / -1; grid-row: 4; }
+.savo-colo-label { margin: 0 0 6px; padding: 0; font: 600 22px/1.3 var(--f-caption); color: var(--section); }
+.savo-colo-name { margin: 0; padding: 0; font-weight: 600; }
+.savo-colo-line, .savo-colo-statement, .savo-colo-review, .savo-colo-citation { margin: 0; padding: 0; overflow-wrap: anywhere; }
+.savo-colo-statement { color: var(--ink); }
+.savo-colo-review { margin-top: 14px; color: var(--ink-soft); }
+.savo-colo-items { margin: 14px 0 0; padding: 0; list-style: none; }
+.savo-colo-item { margin: 0 0 6px; padding: 0; }
+.savo-colo-model { font-weight: 600; color: var(--ai-model); }   /* WP-54 (D-125): the model names wear Claude's terracotta, a token of both themes (4.5:1 and more on the ground); the roles stay in plain ink */
+.savo-colo-roles { color: var(--ink-soft); }
+.savo-colo-citation { font-size: 24px; }
+a.savo-colo-link { color: inherit; text-decoration: underline; text-decoration-thickness: 0.06em; text-underline-offset: 0.18em; }
+a.savo-colo-link:focus-visible { outline: 3px solid var(--section); outline-offset: 4px; border-radius: 4px; }
+
+/* ---------- the closing (WP-19; D-021, D-061, D-064, D-117, D-121, D-125): the card of cover.css, the gold S in the middle, the identity under it; the page is still ----------
+   The S is the savo mark as an image, 640 px square and centred at (960, 520). The identity is two lines, one under the other: the name and the e-mail address, a mailto link (D-125; the institution
+   lines are gone, the cover has them). Its block fits the zone the network keeps clear of (net.js CLOSING_CLEAR: x 690 to 1230, y 880 to 1030, the approved closing network depends on it): it ends at
+   y 1025, 55 px above the card's bottom edge, because a node of the network lies at y 1031.6 just under the zone (seed 5) and a node must stay 6 px away from a line of text; the type is as large as the
+   zone's width allows (k39 measures the widest line against x 690 to 1230). Colours are tokens: the name is gold (--kicker), the address --ink. */
+.savo-closing-mark, .savo-closing-id { z-index: 2; }
+.savo-closing-mark { position: absolute; left: 640px; top: 200px; width: 640px; height: 640px; object-fit: contain; }
+.savo-closing-id { position: absolute; left: 0; right: 0; bottom: 55px; text-align: center; }
+.savo-closing-name { font: 700 48px/1.15 var(--f-title); color: var(--kicker); }
+.savo-closing-mail { margin-top: 6px; font: 400 32px/1.3 var(--f-body); color: var(--ink); }
+a.savo-closing-link { color: inherit; text-decoration: underline; text-decoration-thickness: 0.06em; text-underline-offset: 0.18em; }
+a.savo-closing-link:focus-visible { outline: 3px solid var(--section); outline-offset: 4px; border-radius: 4px; }

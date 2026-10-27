@@ -1,0 +1,35 @@
+{
+  "format": "savo-slides-provenance",
+  "format_version": 1,
+  "engine": {
+    "version": "v0.1.215_beta",
+    "tree": "11e5b862080e9d5e568f7a80513ff4052bab8e73",
+    "tree_parts": {
+      "engine": "c56258c3656e10d2df293fc09a654308ec7c1cb0",
+      "savo_slides": "24c7cd29240565ffe6d6c5233014a5a58a8859f2",
+      "config/engine.yaml": "b4c3dfd2f2814f4cf131140c62affc25c5caa533",
+      "config/themes": "f6fedc746d016f2084e74dc2c9fab3eab5f7e33a"
+    },
+    "dirty": false,
+    "source": "repo"
+  },
+  "content": {
+    "deck": "i2rs-ch06-ensemble-and-hybrid",
+    "version": "v0.1.22",
+    "path": "decks/i2rs/ch06-ensemble-and-hybrid",
+    "tree": "b54d623e495ae9158b8503c00fd0f18b4c60a859",
+    "tree_parts": {
+      "decks/i2rs/ch06-ensemble-and-hybrid": "61bfc889e773e0d722f89c7324ea579efa8294e0",
+      "decks/i2rs/course.yaml": "e9e0491fb6acb5a966920440781c733355163371"
+    },
+    "dirty": false
+  },
+  "build": {
+    "stamp": "2610271003",
+    "source_date_epoch": 1793084604,
+    "target": "student",
+    "commit": "0578e2a07fc46c3bacb7d9986f4fe23db59747d1",
+    "dirty": false,
+    "katex": "0.19.0"
+  }
+}

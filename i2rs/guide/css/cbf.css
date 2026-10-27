@@ -1,0 +1,318 @@
+/* WP-177: Content-based overview page (pages/cbf-page.js). The look of the Model-based CF overview (css/model.css), in its own `.cbf-*` namespace so the pages stay independent.
+   Reuses .panel/.chip/.data-table/.help-tip and the flowchart's svg classes from app.css / trace.css; colours are tokens only, so the dark theme is free.
+
+   Text size: ONE variable. `--cbf-zoom` (set on .cbf-page by the - / + group in the title row, components/zoom-control.js, 0.7 ... 1.4, 1 by default, kept in localStorage as
+   i2rs.zoom.text.cbf) multiplies the page's base font size (16 px at 1.0x: the lecture screen is read from the back of a room); every other size on the page is in em of that base. The
+   panel / chip / table sizes of app.css are px, so they are re-stated in em here, inside .cbf-page only. The pipeline figure is an svg that fills its box up to a cap that follows
+   the same factor, so its text grows with the rest. */
+
+.cbf-page {
+  --cbf-base: 16px;
+  font-size: calc(var(--cbf-base) * var(--cbf-zoom, 1));
+}
+.cbf-page h2 {
+  margin: 0;
+  font-size: 1.3em;
+  color: var(--navy);
+}
+.cbf-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 8px;
+}
+/* the - / + group: the look of the uCF / iCF panels' group (trace.css scopes it to .layout-f, which this page is not); fixed px, so a step never moves it. */
+.cbf-page .zoom-buttons {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: 2px 0 0 auto;
+  align-self: flex-start; /* pinned to the top of the row: the title grows with the factor, and a centred group would drift down with it */
+}
+.cbf-page .zoom-btn {
+  width: 22px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--card);
+  color: var(--navy);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.cbf-page .zoom-btn:hover:not(:disabled) {
+  border-color: var(--navy);
+}
+.cbf-page .zoom-btn:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+}
+.cbf-page .zoom-btn:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: 1px;
+}
+.cbf-page .zoom-value {
+  min-width: 3.2em;
+  text-align: center;
+  font-size: 11px;
+  font-weight: var(--fw-body, 400);
+  color: var(--strong);
+  font-variant-numeric: tabular-nums;
+}
+
+/* key words: a text of config/i18n marks them with **...** and util/emphasis.js draws `strong.key` - coloured and bold, a few per paragraph */
+.cbf-page .key {
+  color: var(--navy);
+  font-weight: var(--fw-heading, 600);
+}
+
+/* contents chips */
+.cbf-toc {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.cbf-toc .chip {
+  font: inherit;
+  font-size: 0.8em;
+  cursor: pointer;
+}
+.cbf-toc .chip:hover {
+  border-color: var(--navy);
+}
+
+.cbf-page .panel-head h3 {
+  font-size: 1em;
+}
+.cbf-page .panel-head {
+  flex-wrap: wrap; /* a heading, its (i) and the caret: wraps under a large text size rather than overflowing */
+}
+.cbf-page .panel-head .caret {
+  margin-left: auto;
+}
+.cbf-text {
+  margin: 0 0 10px;
+  line-height: 1.5;
+  color: var(--strong);
+}
+/* WP-177f: the callout under the comparison table - the text is `strong.key` (the page's emphasis); only the room around it is set here, like the paragraph and the source line it sits between */
+.cbf-callout {
+  margin: 12px 0 0;
+}
+.cbf-src {
+  margin: 8px 0 0;
+  font-size: 0.8em;
+  line-height: 1.4;
+  color: var(--strong); /* --muted (#888) is 3.5 : 1 on the card: below AA for text this small */
+}
+
+/* tables: the full width, long text wraps (break-word, not "anywhere": the latter makes every column's minimum tiny) */
+.cbf-page table.data-table.cbf-table {
+  width: 100%;
+  table-layout: fixed;
+  font-size: 1em; /* the shared table sets 12px: that would stop it following the page's factor */
+}
+.cbf-page .table-wrap {
+  overflow-x: auto;
+}
+.cbf-table th,
+.cbf-table td {
+  vertical-align: top;
+  padding: 6px 10px;
+  font-size: 0.875em;
+  line-height: 1.4;
+  overflow-wrap: break-word;
+}
+.cbf-page table.data-table.cbf-table thead th {
+  font-size: 0.8em; /* beats the shared `table.data-table thead th` (10.5px): the head follows the factor too */
+  color: var(--strong); /* the shared head is --muted: 3.5 : 1 on the card */
+}
+.cbf-table tbody th {
+  border-bottom: 1px solid var(--line); /* the shared table styles td and thead th only */
+}
+.cbf-table .cbf-crit {
+  text-align: left;
+  font-weight: var(--fw-label);
+  color: var(--ink);
+  text-transform: none;
+}
+.cbf-vs col:first-child,
+.cbf-vs th:first-child {
+  width: 20%;
+}
+/* WP-200: the families table has five columns - the row's name, the family, what is kept, training and prediction, the textbook's section; the widths follow how much each cell says (the training
+   cell is the longest), the fixed layout keeps the table inside its box at any width (no horizontal scroll) and the cells wrap */
+.cbf-families th:nth-child(1) {
+  width: 13%;
+}
+.cbf-families th:nth-child(2) {
+  width: 17%;
+}
+.cbf-families th:nth-child(3) {
+  width: 23%;
+}
+.cbf-families th:nth-child(4) {
+  width: 30%;
+}
+.cbf-families th:nth-child(5) {
+  width: 17%;
+}
+/* the (i) of a row sits right after the row's name, in the flow */
+.cbf-crit .rich-tip-wrap {
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* the pipeline: three boxes in the flowchart's own look (trace.css .flow-node-box / .flow-label / .flow-edge); the svg fills its box up to a cap that follows the text size */
+.cbf-figure {
+  margin: 4px 0 12px;
+}
+.cbf-page svg.cbf-flow {
+  width: 100%;
+  max-width: calc(872px * var(--cbf-zoom, 1) * 1.25);
+}
+.cbf-stage {
+  outline: none;
+}
+.cbf-stage:focus-visible .flow-node-box {
+  stroke: var(--navy);
+  stroke-width: 3;
+}
+.cbf-stage.online .flow-node-box {
+  stroke: var(--navy); /* the one stage that runs while the user waits */
+}
+.cbf-flow .cbf-name {
+  font-size: 15px; /* nameMeasure() in the page measures the line breaks at this size (NAME_FONT_PX) */
+  font-weight: 600;
+}
+.cbf-flow .cbf-badge {
+  fill: var(--surface);
+  stroke: var(--line);
+  stroke-width: 1.5;
+}
+.cbf-flow .cbf-badge-label {
+  font-size: 13px;
+  font-weight: 700;
+  fill: var(--navy);
+  stroke: none;
+  pointer-events: none;
+}
+.cbf-flow .cbf-mode {
+  fill: var(--surface);
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.cbf-flow .cbf-mode.online {
+  fill: var(--navy);
+  stroke: var(--navy);
+}
+.cbf-flow .cbf-mode-label {
+  font-size: 13px;
+  font-weight: 600;
+  fill: var(--strong);
+  stroke: none;
+  pointer-events: none;
+}
+.cbf-flow .cbf-mode-label.online {
+  fill: var(--on-navy);
+}
+/* what a hovered or focused box says: a bubble over the box (fixed, so the page's scroll box never clips it); its size is rem, so the presenting view enlarges it */
+.cbf-tip {
+  position: fixed;
+  z-index: 60;
+  width: 22rem;
+  max-width: calc(100vw - 16px);
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--r-lg);
+  background: var(--navy);
+  color: var(--on-navy);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  text-align: left;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  overflow-y: auto;
+  pointer-events: none;
+}
+.cbf-tip[hidden] {
+  display: none;
+}
+
+/* cold start: a grid of user (rows) x item (columns); in each cell the two methods, a method that cannot start is in the amber tokens */
+.cbf-cold-grid thead th:first-child,
+.cbf-cold-grid tbody th {
+  width: 17%; /* the row names are short: the two item columns get the room */
+}
+.cbf-cold-cell {
+  padding: 6px 8px;
+}
+.cbf-cold-line {
+  margin: 0 0 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+  font-size: 1em;
+  line-height: 1.4;
+}
+.cbf-cold-line:last-child {
+  margin-bottom: 0;
+}
+.cbf-cold-line.bad {
+  border-color: var(--amber-line);
+  background: var(--amber-bg);
+}
+.cbf-cold-line.bad .key {
+  color: var(--amber-ink);
+}
+.cbf-method {
+  display: block;
+  margin-bottom: 1px;
+  font-size: 0.8em;
+  color: var(--strong);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* where the field went */
+.cbf-list {
+  margin: 0 0 10px;
+  padding-left: 1.3em;
+  line-height: 1.5;
+  color: var(--strong);
+}
+.cbf-list li {
+  margin-bottom: 6px;
+}
+.cbf-refs {
+  margin: 4px 0 0;
+  font-size: 0.85em;
+  color: var(--strong);
+}
+.cbf-refs summary {
+  cursor: pointer;
+  color: var(--strong);
+}
+.cbf-ref-list {
+  margin: 6px 0 0;
+  padding-left: 1.3em;
+  line-height: 1.45;
+}
+
+/* the week's links */
+.cbf-links {
+  margin: 0;
+  padding-left: 1.3em;
+  line-height: 1.6;
+}
+.cbf-link {
+  color: var(--navy);
+  font-weight: var(--fw-heading, 600);
+}
+.cbf-link-text {
+  margin-left: 0.6em;
+  color: var(--strong);
+}

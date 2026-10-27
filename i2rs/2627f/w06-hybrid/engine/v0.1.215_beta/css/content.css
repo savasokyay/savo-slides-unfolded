@@ -1,0 +1,36 @@
+/* WP-20: the look of the content layouts (engine/layouts) and of the placeholder page. The DOM contract is engine/layouts/frame.js; the numbers are engine/layouts/geometry.js
+   (tests/js/layout-geometry.test.mjs holds the two together). Opened by slide-code-agent on 2026-10-25 as an exception to the ownership table: the visual polish and the ownership of
+   this file go to slide-ui-agent afterwards (lead decision).
+   Rules: tokens only, no colour literal (the build writes the tokens into <style id="savo-theme">); units are stage pixels (the stage is 1920 x 1080 and scaled by --stage-scale);
+   design-brief sections 2 (stage and grid) and 3 (type roles). The values are the prototype's content slide (prototypes/directions/index.html: .tblock, .stitle, .hook, .body).
+   Motion is not here: it is a Plan returned by the layout (D-039). The inline styles a layout writes are what that motion moves: opacity and transform, never layout. */
+
+/* the slide root fills the stage; the chrome (engine/css/chrome.css) stands above it (z-index 10) */
+.savo-slide { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; margin: 0; padding: 0; color: var(--ink); }
+
+/* the head: the title and the hook, top left (prototype .tblock at left 150, top 186) */
+.savo-head { position: absolute; left: 150px; right: 150px; top: 186px; margin: 0; padding: 0; }
+.savo-title { margin: 0; padding: 0; font: 600 70px/1.06 var(--f-title); font-stretch: 100%; letter-spacing: -0.02em; color: var(--title); }
+.savo-hook { margin: 14px 0 0; padding: 0; font: 600 36px/1.25 var(--f-body); color: var(--section); }
+
+/* text-steps: the lines that open one press at a time; the same y on every slide (prototype .body at top 404), one measure of 1320 px (about 75 characters) */
+.savo-steps { position: absolute; left: 150px; top: 404px; width: 1320px; margin: 0; padding: 0; list-style: none; font: 400 36px/1.42 var(--f-body); color: var(--ink); }
+.savo-step { margin: 0 0 22px; padding: 0; }
+.savo-step:last-child { margin-bottom: 0; }
+
+/* widget-stage: the slot of ONE widget (1620 x 600 at x 150, y 330: geometry.js WIDGET_SLOT) and the caption band under it (one line of 30 px, y 940 to 996: CAPTION_BAND). The
+   captions lie on top of each other in the band and the layout shows one at a time. A caption wider than the band runs out to the right: a measurement sees it, nothing clips
+   or wraps it away (fail loudly). The slot clips nothing either: a widget reads ctx.size and stays inside it. Look of the small body: design-brief section 3 (400, 30 px, ink-soft). */
+.savo-slot { position: absolute; left: 150px; top: 330px; width: 1620px; height: 600px; margin: 0; padding: 0; }
+.savo-slot-note { margin: 0; padding: 0; font: 400 24px/1.3 var(--f-body); color: var(--ink-soft); }
+.savo-caption { position: absolute; left: 150px; top: 940px; width: 1620px; height: 56px; margin: 0; padding: 0; }
+.savo-cap { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; font: 400 30px/56px var(--f-body); color: var(--ink-soft); white-space: nowrap; }
+
+/* the placeholder page (engine/core/placeholder.js): what the engine draws for a page it has no renderer for yet (a generated page before its own renderer, a slide of a layout
+   still on the placeholder). It sits in the content area, under the strip and above the footer band, and wears the type of the content layouts. */
+.savo-placeholder { position: absolute; left: 150px; right: 150px; top: 186px; margin: 0; padding: 0; color: var(--ink); font: 400 36px/1.42 var(--f-body); }
+.savo-placeholder [data-part="title"] { margin: 0 0 14px; padding: 0; font: 600 70px/1.06 var(--f-title); font-stretch: 100%; letter-spacing: -0.02em; color: var(--title); }
+.savo-placeholder [data-part="hook"] { margin: 0 0 40px; padding: 0; font: 600 36px/1.25 var(--f-body); color: var(--section); }
+.savo-placeholder [data-part="steps"] { margin: 0; padding: 0; list-style: none; max-width: 1320px; }
+.savo-placeholder [data-part="steps"] > li { margin: 0 0 22px; padding: 0; }
+.savo-placeholder [data-part="widget"] { margin: 40px 0 0; padding: 0; font: 400 24px/1.3 var(--f-body); color: var(--ink-soft); }

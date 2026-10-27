@@ -1,0 +1,1085 @@
+/* WP-83: the Users / Items pages. Everything reuses the existing tokens and shared classes
+   (.panel, .trace-form, .param-field, .miniseg, .pill, .btn, table.data-table); this file only adds
+   the layout (full-height column, the table panel as the scroll container) and the pieces that did
+   not exist yet: the sortable header, the selected row, the inline histogram, the tag pills. */
+
+.cohort-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  gap: 8px;
+}
+
+.cohort-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cohort-title {
+  margin: 0 8px 0 0;
+  font-size: 18px;
+  color: var(--navy);
+}
+
+/* what a column means, said once at the top (the std is the POPULATION one, ddof = 0) */
+.cohort-note {
+  background: var(--card);
+  border: 1px solid var(--line);
+}
+
+/* controls keep their width whatever the data does: search 220 px, the count pill a fixed width */
+.cohort-controls {
+  margin-bottom: 0;
+  align-items: flex-end;
+}
+
+.cohort-controls .cohort-search {
+  width: 220px;
+}
+
+.cohort-controls .param-field[hidden] {
+  display: none;
+}
+
+/* WP-95: the Kind filter appears once the first answer says the dataset has `tmdb_kind`; until then (and when it has
+   none) it keeps its place - the controls to its right must not jump - so it is hidden by visibility, not display */
+.cohort-controls .cohort-kind.unavailable {
+  visibility: hidden;
+}
+
+/* WP-95 (25): the Cohort (Users) / Origin (Items) filter of a dataset with ONE cohort has nothing to choose between; like
+   Kind it keeps its place, so the controls to its right never move */
+.cohort-controls .cohort-filter.unavailable {
+  visibility: hidden;
+}
+
+/* WP-95: the data-quality chips of an item row (flags.js pills) sit side by side, never wrapping the row taller */
+.cohort-flags {
+  display: inline-flex;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.cohort-count {
+  min-width: 11em;
+  text-align: center;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  align-self: flex-end;
+  padding: 5px 10px;
+  background: var(--card);
+  border: 1px solid var(--line);
+}
+
+/* -- layout: the table panel scrolls, the page does not ---------------------------------------- */
+
+.cohort-main {
+  display: flex;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.cohort-table-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.cohort-table-panel > .panel-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0;
+}
+
+/* `.table-wrap` is the scroll container (trace.css leaves its height unbounded, which is why a
+   sticky header never stuck on a long table): rows scroll inside it, the header stays on top */
+.cohort-table-panel .table-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.cohort-pager {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-top: 1px solid var(--line);
+  flex: 0 0 auto;
+}
+
+.cohort-page-info {
+  min-width: 7em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.cohort-pager .btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* -- the table -------------------------------------------------------------------------------- */
+
+/* fixed layout + <colgroup> widths: a sort change swaps the visible rows but never moves a column */
+table.cohort-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+table.cohort-table thead th {
+  z-index: 1;
+  vertical-align: bottom;
+  line-height: 1.2;
+  white-space: normal;
+}
+
+table.cohort-table thead th.num {
+  text-align: right;
+}
+
+table.cohort-table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cohort-table .sort-btn {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-transform: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+
+.cohort-table th.num .sort-btn {
+  justify-content: flex-end;
+}
+
+/* WP-95 (22): a secondary column (Users: watched-unrated, diary) in the muted ink; the sorted header stays navy */
+.cohort-table th.col-muted:not(.sorted),
+.cohort-table td.col-muted {
+  color: var(--muted);
+}
+
+.cohort-table th.sorted {
+  color: var(--navy);
+}
+
+/* WP-95 (25): the optional columns (Min, Max) are dropped - header, cells and their <col> - while the table box is too
+   narrow for every column (cohort-table.js sets `.narrow` from the box's own width); the header and cells carry the same
+   class so the rest keeps its width and no horizontal scrollbar is needed */
+.cohort-table.narrow .col-optional {
+  display: none;
+}
+
+/* reserved width: the arrow appears and disappears without nudging the header text */
+.cohort-table .sort-ind {
+  display: inline-block;
+  width: 1.1em;
+  text-align: center;
+  font-size: 9px;
+}
+
+.cohort-table tbody tr {
+  cursor: pointer;
+}
+
+.cohort-table tbody tr:hover td {
+  background: color-mix(in srgb, var(--navy) 6%, transparent);
+}
+
+.cohort-table tbody tr.selected td {
+  background: color-mix(in srgb, var(--navy) 13%, transparent);
+  font-weight: 600;
+}
+
+/* the selected row also wears a bar on its left edge: colour is never the only cue */
+.cohort-table tbody tr.selected td:first-child {
+  box-shadow: inset 3px 0 0 var(--navy);
+}
+
+.cohort-table tbody tr:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: -2px;
+}
+
+.cohort-table tr.message-row td {
+  padding: 18px 12px;
+  color: var(--muted);
+  white-space: normal;
+}
+
+.cohort-label {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cohort-genres .pill {
+  margin-left: 4px;
+}
+
+.cohort-warns .pill.tag-fault {
+  margin-left: 0;
+}
+
+.cohort-table .muted {
+  color: var(--muted);
+}
+
+/* -- tag pills: text carries the meaning, tint only supports it ---------------------------------- */
+
+.pill.tag-class {
+  background: color-mix(in srgb, var(--navy) 14%, transparent);
+  color: var(--navy);
+  font-weight: 600;
+}
+
+.pill.tag-ml {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--strong);
+}
+
+/* -- inline histogram (sparkline-hist.js): token colours only, so the dark theme is free ----------- */
+
+.spark {
+  display: block;
+  overflow: visible;
+}
+
+.spark-bar {
+  fill: color-mix(in srgb, var(--navy) 60%, transparent);
+}
+
+.spark-bar.mode {
+  fill: var(--navy);
+}
+
+/* an empty bin keeps a hairline notch, so the shape of the scale stays readable */
+.spark-bar.zero {
+  fill: var(--line);
+}
+
+.spark-cap {
+  font-size: 9px;
+  fill: var(--muted);
+}
+
+.spark-peak {
+  fill: var(--navy);
+  font-weight: 700;
+}
+
+@media (max-width: 1100px) {
+  .cohort-page {
+    height: auto;
+  }
+
+  .cohort-main {
+    flex-direction: column;
+  }
+
+  .cohort-table-panel .table-wrap {
+    max-height: 70vh;
+  }
+}
+
+.presenting .cohort-table td {
+  font-size: 14px;
+}
+
+.presenting .cohort-table thead th {
+  font-size: 12px;
+}
+
+/* -- detail card (cohort-card.js): a Letterboxd-profile-like preview ------------------------------- */
+
+.cohort-card-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 var(--cohort-card-w, 320px);
+  width: var(--cohort-card-w, 320px);
+  min-height: 0;
+  margin-bottom: 0;
+  overflow: hidden;
+}
+
+/* folded: a 36 px rail that keeps only its toggle */
+.cohort-card-panel.collapsed {
+  flex-basis: 36px;
+  width: 36px;
+}
+
+.cohort-card-panel.collapsed .cohort-card-body {
+  display: none;
+}
+
+.cohort-card-toggle {
+  align-self: flex-end;
+  padding: 6px 12px;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.cohort-card-panel.collapsed .cohort-card-toggle {
+  align-self: center;
+  padding: 6px 4px;
+}
+
+.cohort-card-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0 14px 14px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+/* WP-95 (24): the title row of a user / item card (the film's name and year, the user's name and dominant chip, the
+   cohort pill, the ✕) stays at the top of the card while its body scrolls: the card's own ground (opaque), a line
+   under it, and the body's side padding spanned so nothing shows beside it. The other chips scroll with the body. */
+.card-head.sticky {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin: 0 -14px 10px;
+  padding: 2px 14px 8px;
+  border-bottom: 1px solid var(--line);
+  background: var(--card);
+}
+
+.card-head h3 {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--navy);
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-clear {
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.card-sub,
+.card-ids {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.card-sub {
+  margin: -6px 0 10px;
+}
+
+.card-ids {
+  margin: 6px 0 10px;
+}
+
+/* stat tiles: label 0.62rem uppercase muted, value navy (the logo's gold is below AA on white) */
+.stat-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.stat-tile {
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+}
+
+.tile-label {
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.tile-value {
+  color: var(--navy);
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.tile-value.muted {
+  color: var(--muted);
+}
+
+.tile-sub {
+  color: var(--muted);
+  font-size: 10px;
+  white-space: pre-line; /* a "
+" in the text is a line break (average: stars, then ± std) */
+}
+
+/* the histogram is drawn at the card's full inner width, but the body's scrollbar takes a slice of it:
+   scale with the box (the viewBox keeps the proportions) instead of overflowing it */
+.card-hist {
+  margin-top: 12px;
+}
+
+.card-hist svg {
+  width: 100%;
+  height: auto;
+}
+
+.card-span {
+  display: inline-block;
+  margin-top: 8px;
+}
+
+.card-section {
+  margin-top: 12px;
+}
+
+.card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.card-chips .chip .pill {
+  margin-left: 2px;
+  padding: 0 5px;
+}
+
+.card-list {
+  margin: 6px 0 0;
+  padding: 0;
+  font-size: 12px;
+  list-style: none;
+}
+
+/* WP-83c: a list row is a grid of fixed columns - who | when | stars | number. Every cell but the
+   name is as wide as a hidden copy of its widest value (`.card-cell-ghost`), so each column has the
+   same width and x in every row; nothing is one right-aligned run of mixed tokens. */
+.card-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  align-items: baseline;
+  column-gap: 8px;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.card-list-plain li {
+  grid-template-columns: minmax(0, 1fr) auto auto; /* no "when" column: stars and number stay last */
+}
+
+.card-list-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-cell {
+  display: inline-grid;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.card-cell > * {
+  grid-area: 1 / 1;
+}
+
+.card-cell-ghost {
+  visibility: hidden;
+}
+
+.card-list-date {
+  justify-items: start;
+  color: var(--muted);
+  font-size: 10.5px;
+}
+
+.card-list-stars {
+  justify-items: start; /* "★" and "★★★★★" start at the same x */
+  color: var(--strong);
+}
+
+.card-list-value {
+  justify-items: end;
+  color: var(--strong);
+}
+
+.card-cohort-rows {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: 6px 8px;
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+.card-cohort-row {
+  display: contents; /* the pill and the text are cells of .card-cohort-rows */
+}
+
+.card-cohort-row > .pill {
+  justify-self: start; /* the column is as wide as the widest pill; a narrower one keeps its own width */
+}
+
+/* WP-91: the pair-films block inside the user card - narrower rating columns, so a title keeps ~130 px */
+.cohort-card-body .pairfilms {
+  margin-top: 10px;
+}
+
+.cohort-card-body .pairfilms-table col.pf-col-num {
+  width: 3rem;
+}
+
+.card-note {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.card-door {
+  margin-top: 14px;
+}
+
+.card-skeleton {
+  height: 120px;
+  border-radius: var(--r);
+  background: var(--surface);
+}
+
+.cohort-card-body .warn-banner {
+  margin: 0;
+}
+
+/* -- histogram markers (sparkline-hist.js `markers`, the Data page's rating histogram) ------------------ */
+/* mean = solid, median = dashed, mean ± std = dotted: the STYLE tells them apart, the colour only supports it;
+   each line has a card-coloured halo so it stays visible across a solid bar, and a wide invisible stroke so a
+   native <title> tooltip is easy to hit. `non-scaling-stroke`: the card's SVG scales with its box, the strokes must not. */
+
+.spark-marker line {
+  vector-effect: non-scaling-stroke;
+  fill: none;
+}
+
+.spark-halo {
+  stroke: var(--card);
+  stroke-width: 3.5;
+}
+
+.spark-mark {
+  stroke-width: 1.5;
+}
+
+.spark-mark.mean {
+  stroke: var(--navy);
+}
+
+.spark-mark.median {
+  stroke: var(--maroon);
+  stroke-dasharray: 4 3;
+}
+
+.spark-mark.std {
+  stroke: var(--strong);
+  stroke-width: 1;
+  stroke-dasharray: 1 2;
+}
+
+.spark-hit {
+  stroke: transparent;
+  pointer-events: stroke;
+}
+
+.hist-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 6px;
+  color: var(--strong);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.hist-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+@media (max-width: 1100px) {
+  .cohort-card-panel,
+  .cohort-card-panel.collapsed {
+    flex: 0 0 auto;
+    width: auto;
+  }
+
+  .cohort-card-panel:not(.collapsed) {
+    max-height: 50vh;
+  }
+}
+
+.presenting .stat-tile .tile-value {
+  font-size: 1.1rem;
+}
+
+/* -- WP-98: rater profile - radar of six scores in their own units + chips of what stands out (trait-radar.js) -- */
+
+/* one colour per AXIS (the word says the direction); light values hold AA contrast on their own tint, the
+   dark theme swaps to the lighter set. "mixed" (composite words such as "selective") stays navy. */
+:root {
+  --trait-activity: #475569;
+  --trait-generosity: #b45309;
+  --trait-spread: #6d28d9;
+  --trait-mainstream: #0f766e;
+  --trait-agreement: var(--maroon);
+  --trait-diversity: #15803d;
+}
+
+[data-theme="dark"] {
+  --trait-activity: #cbd5e1;
+  --trait-generosity: #fbbf24;
+  --trait-spread: #c4b5fd;
+  --trait-mainstream: #5eead4;
+  --trait-diversity: #4ade80;
+}
+
+/* WP-98 (A5): the direction of an axis lives in the word and its colour - every axis has two tones of its colour, one
+   per end (the word's end, from /api/meta traits.words), used by the corner's direction word and by the chips. Generosity
+   is the one axis whose two ends differ in hue (harsh crimson, generous amber); Agreement keeps its maroon. Light values
+   hold AA contrast on white for the 11 px bold word; the dark theme swaps to the lighter set. */
+:root {
+  --trait-activity-low: #64748b;
+  --trait-activity-high: #334155;
+  --trait-generosity-low: #9f1239;
+  --trait-generosity-high: #b45309;
+  --trait-spread-low: #7c3aed;
+  --trait-spread-high: #4c1d95;
+  --trait-mainstream-low: #0f766e;
+  --trait-mainstream-high: #134e4a;
+  --trait-agreement-low: #b4504f;
+  --trait-agreement-high: #800000;
+  --trait-diversity-low: #15803d;
+  --trait-diversity-high: #14532d;
+}
+
+[data-theme="dark"] {
+  --trait-activity-low: #94a3b8;
+  --trait-activity-high: #e2e8f0;
+  --trait-generosity-low: #fda4af;
+  --trait-generosity-high: #fbbf24;
+  --trait-spread-low: #a78bfa;
+  --trait-spread-high: #ddd6fe;
+  --trait-mainstream-low: #2dd4bf;
+  --trait-mainstream-high: #99f6e4;
+  --trait-agreement-low: #ffb4ab;
+  --trait-agreement-high: #ff8a80;
+  --trait-diversity-low: #4ade80;
+  --trait-diversity-high: #bbf7d0;
+}
+
+.trait-chip {
+  --trait-color: var(--navy);
+  display: inline-block;
+  padding: 1px 8px;
+  border: 1px solid color-mix(in srgb, var(--trait-color) 35%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--trait-color) 14%, transparent);
+  color: var(--trait-color);
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.trait-chip.tr-activity {
+  --trait-color: var(--trait-activity);
+}
+.trait-chip.tr-generosity {
+  --trait-color: var(--trait-generosity);
+}
+.trait-chip.tr-spread {
+  --trait-color: var(--trait-spread);
+}
+.trait-chip.tr-mainstream {
+  --trait-color: var(--trait-mainstream);
+}
+.trait-chip.tr-agreement {
+  --trait-color: var(--trait-agreement);
+}
+.trait-chip.tr-diversity {
+  --trait-color: var(--trait-diversity);
+}
+
+/* WP-98 (A5): a chip and a corner word take the tone of their end of the axis (set below as --trait-color on both) */
+.trait-chip.tone-low.tr-activity,
+.tr-word.tone-low.tr-activity {
+  --trait-color: var(--trait-activity-low);
+}
+.trait-chip.tone-high.tr-activity,
+.tr-word.tone-high.tr-activity {
+  --trait-color: var(--trait-activity-high);
+}
+.trait-chip.tone-low.tr-generosity,
+.tr-word.tone-low.tr-generosity {
+  --trait-color: var(--trait-generosity-low);
+}
+.trait-chip.tone-high.tr-generosity,
+.tr-word.tone-high.tr-generosity {
+  --trait-color: var(--trait-generosity-high);
+}
+.trait-chip.tone-low.tr-spread,
+.tr-word.tone-low.tr-spread {
+  --trait-color: var(--trait-spread-low);
+}
+.trait-chip.tone-high.tr-spread,
+.tr-word.tone-high.tr-spread {
+  --trait-color: var(--trait-spread-high);
+}
+.trait-chip.tone-low.tr-mainstream,
+.tr-word.tone-low.tr-mainstream {
+  --trait-color: var(--trait-mainstream-low);
+}
+.trait-chip.tone-high.tr-mainstream,
+.tr-word.tone-high.tr-mainstream {
+  --trait-color: var(--trait-mainstream-high);
+}
+.trait-chip.tone-low.tr-agreement,
+.tr-word.tone-low.tr-agreement {
+  --trait-color: var(--trait-agreement-low);
+}
+.trait-chip.tone-high.tr-agreement,
+.tr-word.tone-high.tr-agreement {
+  --trait-color: var(--trait-agreement-high);
+}
+.trait-chip.tone-low.tr-diversity,
+.tr-word.tone-low.tr-diversity {
+  --trait-color: var(--trait-diversity-low);
+}
+.trait-chip.tone-high.tr-diversity,
+.tr-word.tone-high.tr-diversity {
+  --trait-color: var(--trait-diversity-high);
+}
+
+/* the block title row: title, help button, then the chips (the dominant one sits beside the user's name) */
+.trait-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+}
+
+/* the card body clips what leaves its 303 px, and the help bubble is 260 px wide: anchor it to the title row
+   (the button stops being the containing block), so it opens inside the card whatever the title's width */
+.trait-head {
+  position: relative;
+}
+
+.trait-head .help-tip {
+  position: static;
+  margin: -2px 0;
+}
+
+.trait-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-left: auto;
+  justify-content: flex-end;
+}
+
+.trait-radar {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 6px;
+  overflow: visible;
+}
+
+/* WP-98 (A5): the spoke is the distance from the typical band, so there are two rings only: 100, the faint rim, and
+   50 - the cut-offs, where a chip begins - the one guide ring (a stronger stroke, no legend). stroke-opacity leaves
+   the rim's fill alone. */
+.tr-ring {
+  fill: none;
+  stroke: var(--line);
+  stroke-opacity: 0.55;
+  stroke-width: 1;
+}
+
+.tr-ring.tr-guide {
+  stroke: var(--muted);
+  stroke-opacity: 0.85;
+}
+
+.tr-ring.tr-rim {
+  fill: var(--surface);
+}
+
+.tr-spoke {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.tr-area {
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  fill-opacity: 0.3;
+}
+
+.tr-area.a {
+  fill: var(--navy);
+  stroke: var(--navy);
+}
+
+.tr-area.b {
+  fill: var(--maroon);
+  stroke: var(--maroon);
+}
+
+.tr-dot.a {
+  fill: var(--navy);
+}
+
+.tr-dot.b {
+  fill: var(--maroon);
+}
+
+/* a null axis: no filler value, a hollow dot just off the centre of its spoke */
+.tr-dot.tr-null {
+  fill: var(--card);
+  stroke: var(--muted);
+  stroke-width: 1.2;
+}
+
+.tr-label {
+  fill: var(--strong);
+  font-size: 11px;
+}
+
+/* the corner's value line (the raw score and its unit) */
+.tr-val {
+  fill: var(--ink);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.tr-val.tr-none {
+  fill: var(--muted);
+  font-weight: 400;
+}
+
+/* WP-98 (A5): the direction word after the value, in the tone of its end of the axis (--trait-color, set above) */
+.tr-word {
+  fill: var(--trait-color);
+  font-weight: 700;
+}
+
+.trait-compare {
+  margin-top: 12px;
+}
+
+.trait-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 6px;
+  color: var(--strong);
+  font-size: 11px;
+}
+
+.trait-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.trait-legend-name {
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trait-swatch {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.trait-swatch.a {
+  background: var(--navy);
+}
+
+.trait-swatch.b {
+  background: var(--maroon);
+}
+
+/* WP-95 (20): the flag filter - the Flags column's pills as toggle chips (chosen = filled amber). Like Kind it keeps
+   its place while the dataset cannot judge a flag (visibility), so the controls to its right never move. */
+.cohort-controls .cohort-flagsel.unavailable {
+  visibility: hidden;
+}
+
+.cohort-flagchips {
+  display: flex;
+  gap: 4px;
+}
+
+.cohort-flagchips .flag-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.cohort-flagchips .flag-chip.on {
+  border-color: var(--amber-ink);
+  background: var(--amber-ink);
+  color: var(--card); /* the ground colour on the filled amber: white on the light theme, dark on the dark theme's light amber (white there would be ~1.6 : 1) */
+  font-weight: 600;
+}
+
+/* WP-95 (21): "Raters >= n" - a label with its help button, and a number box of fixed width */
+.cohort-min-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.cohort-min-head .help-tip {
+  margin: -4px 0;
+}
+
+.cohort-controls .cohort-min-input {
+  width: 64px;
+}
+
+/* WP-95 (23): the note about a statistic sort without a threshold is the last item of the filter bar - it takes the room
+   the controls leave (flex-basis 0, so it never makes the bar wrap), cuts its text with an ellipsis when that room is
+   small (the full sentence is its tooltip) and is absent (`hidden`) while it does not apply */
+.cohort-controls .cohort-minnote {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  align-self: flex-end;
+  gap: 10px;
+  min-height: 27px;
+  min-width: 0;
+  color: var(--strong);
+  font-size: 11px;
+}
+
+.cohort-controls .cohort-minnote[hidden] {
+  display: none;
+}
+
+.cohort-minnote-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cohort-minnote-btn {
+  padding: 2px 10px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* WP-100: the item card's class-ratings table - the list rows under a header row of the same grid, whose "Date" and
+   "Rating" buttons sort it (the active one is navy with an arrow). The header carries the same hidden widest values
+   as the rows, so its cells stand over their columns. */
+.card-list-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  align-items: baseline;
+  column-gap: 8px;
+  margin-top: 6px;
+  padding: 0 0 3px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.card-list-head + .card-list {
+  margin-top: 0;
+}
+
+/* the hidden widest values are as big as in the rows (12 px; the date column 10.5 px), not the header's 10 px */
+.card-list-head .card-cell-ghost {
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.card-list-head .card-list-date .card-cell-ghost {
+  font-size: 10.5px;
+}
+
+.card-sort {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  white-space: nowrap;
+}
+
+.card-sort:hover,
+.card-sort.active {
+  color: var(--navy);
+}

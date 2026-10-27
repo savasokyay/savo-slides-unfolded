@@ -1,0 +1,6 @@
+{
+  "name": "savo-slides-engine",
+  "private": true,
+  "type": "module",
+  "description": "WP-09: scopes `type: module` to engine/ so node --test can import the same ES modules the browser loads."
+}
