@@ -1,0 +1,811 @@
+/* WP-66: Slides pages (lecture boards). Layout: title row + narration-order select, the board
+   (SVG, scales with the viewBox) beside a sticky narration card, transport controls below.
+   Board colours are CSS variables on .board-svg so both themes and the projector work from the
+   same tokens: red = users (rows, u), blue = items / content (columns, i), green = models /
+   graphs, neutral ink = structure; ghost = the pencil under-drawing before a step inks a thing. */
+
+/* No header row and no hint row: the sidebar names the deck, the cover step states its purpose,
+   the usage hint is a tooltip on the bar's ⓘ. The page takes the FULL height of the main area:
+   board + card fill it (the board scales by height and keeps its aspect ratio, the card takes the
+   remaining width), the player strip sits directly under them - no dead space below the bar. */
+.slides-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  gap: 6px;
+}
+
+.slides-top {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: 12px;
+  align-items: stretch;
+}
+
+@media (max-width: 1000px) {
+  .slides-page {
+    height: auto;
+  }
+
+  .slides-top {
+    flex-direction: column;
+  }
+
+  .slides-top .splitter {
+    display: none; /* WP-111: stacked - there is nothing side by side to divide */
+  }
+
+  .board-svg {
+    width: 100%;
+    height: auto;
+  }
+}
+
+/* the player bar as one thin strip: playback cluster · position · narration order · phase · ⓘ */
+.slides-controls .player-controls {
+  gap: 4px;
+  flex-wrap: nowrap;
+  min-height: 26px;
+}
+
+.slides-controls .player-controls select {
+  padding: 2px 4px;
+  font-size: 11px;
+}
+
+.slides-controls .player-counter {
+  margin-left: 10px;
+  white-space: nowrap;
+}
+
+/* WP-67: a strip that does not jitter while stepping - the counter and the sub-step dots keep the
+   width of their widest content (min-width set by slides-page.js), so the phase select that follows
+   them sits at the same x on every step, a fixed gap after the dots (pinning it to the right edge
+   was rejected by the instructor: it belongs right after the position block) */
+.slides-controls .player-counter,
+.slides-controls .player-dots {
+  display: inline-block;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.slides-controls .slides-phase {
+  margin-left: 6px;
+}
+
+.slides-controls .player-progress {
+  margin-top: 4px;
+  height: 3px;
+}
+
+.slides-route {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--strong);
+  white-space: nowrap;
+}
+
+/* WP-95 (8a): the ⓘ button and its bubble are the shared `.help-tip` of app.css (WP-82 built them here first);
+   only its place is page-specific - pushed to the right end of the controls row */
+.slides-controls .help-tip {
+  margin-left: auto;
+}
+
+.slides-board-panel {
+  flex: 0 0 auto; /* width = what the height-scaled board needs (set by slides-page.js fitBoard) */
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+}
+
+/* WP-111: the draggable divider between the board and the narration card (components/splitter.js, the one the uCF / iCF page uses
+   between its panels). The handle is a child of the board panel and sits in the 12 px gap behind it (right: -10px puts its 8 px
+   between 2 and 10 px past the panel's edge), so no script positions it. The same look as trace.css `.layout-f .splitter` - quiet by
+   default (a short, thin line), navy on hover, focus and while dragging - but scoped to this page, whose rules live in this file. */
+.slides-top .has-splitter {
+  position: relative;
+}
+.slides-top .splitter {
+  position: absolute;
+  z-index: 4;
+  top: 0;
+  bottom: 0;
+  right: -10px;
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+  outline: none;
+}
+.slides-top .splitter::after {
+  content: "";
+  position: absolute;
+  top: calc(50% - 18px);
+  left: 3px;
+  width: 2px;
+  height: 36px;
+  border-radius: 2px;
+  background: var(--muted); /* not --line: 1.2:1 on the page ground, the handle would not be found */
+  transition: background 0.12s;
+}
+.slides-top .splitter:hover::after,
+.slides-top .splitter.dragging::after,
+.slides-top .splitter:focus-visible::after {
+  background: var(--navy);
+}
+.slides-top .splitter:focus-visible::after {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--navy) 35%, transparent);
+}
+
+.slides-board-panel .panel-body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 8px 10px 6px;
+}
+
+/* The card fills its grid cell (as tall as the board) and lays out top-down: chapter chip +
+   counter, title, the narration (scrolls if it ever overflows), and the door pinned to the bottom
+   so the lecturer always finds it in the same place. Type scales with the card's height
+   (container-query units) so a tall projector layout gets bigger text, not more white space. */
+.slides-card-panel {
+  flex: 1 1 0;
+  min-width: 260px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  container-type: size;
+}
+
+.slides-card-panel .panel-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 16px 18px;
+}
+
+.slides-controls {
+  flex: none;
+}
+
+.bar-sep {
+  display: inline-block;
+  width: 1px;
+  height: 16px;
+  margin: 0 8px 0 6px;
+  background: var(--line);
+}
+
+/* -- board ---------------------------------------------------------------------------------- */
+
+.board-host {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* the host is sized to the viewBox ratio by fitBoard(); the SVG simply fills it */
+.board-svg {
+  display: block;
+  height: 100%;
+  width: 100%;
+  --bd-ink: var(--strong);
+  --bd-ghost: color-mix(in srgb, var(--muted) 62%, var(--card));
+  --bd-user: var(--c-user); /* WP-106: the app-wide role colours (tokens.css); the values did not change */
+  --bd-item: var(--c-item);
+  --bd-model: var(--green);
+  --bd-target: #7e57c2; /* the target user's own model (content-based) */
+  --bd-rating: #e07b00; /* the rating / output r̂ and the cells it fills */
+  --bd-kb: #dc4c4c; /* the knowledge-based branch: light red, as on the whiteboard; WP-82: a notch redder than the pastel #e57373 (user), still lighter than the user red */
+  --bd-example: #c2185b; /* WP-80: examples ("like this, but cheaper") - the instructor's slide pink */
+  --bd-muted: var(--muted);
+  --bd-card: var(--card);
+  --bd-halo: color-mix(in srgb, var(--navy) 55%, transparent);
+  font-family: var(--font);
+}
+
+[data-theme="dark"] .board-svg {
+  --bd-item: var(--c-item); /* WP-106: #6aa7ff, defined once in tokens.css */
+  --bd-target: #b39ddb;
+  --bd-rating: #ffb74d;
+  --bd-kb: #ff7070; /* WP-82: redder, see the light value */
+  --bd-example: #f48fb1; /* WP-80 */
+  --bd-ink: var(--ink);
+  --bd-ghost: color-mix(in srgb, var(--muted) 55%, var(--card));
+}
+
+/* ghost = every element before its step (a faint pencil under-drawing: present, not competing);
+   inked = revealed; the group's variables drive shapes */
+.bd-el {
+  --bd-stroke: var(--bd-ghost);
+  --bd-text: var(--bd-ghost);
+  opacity: 0.36;
+  transition: opacity 0.4s ease;
+}
+
+.bd-el.inked {
+  --bd-stroke: var(--bd-ink);
+  --bd-text: var(--bd-ink);
+  opacity: 1;
+}
+
+.bd-el.inked.role-user,
+.bd-el.inked .role-user {
+  --bd-stroke: var(--bd-user);
+  --bd-text: var(--bd-user);
+}
+
+.bd-el.inked.role-item,
+.bd-el.inked .role-item {
+  --bd-stroke: var(--bd-item);
+  --bd-text: var(--bd-item);
+}
+
+.bd-el.inked.role-model,
+.bd-el.inked .role-model {
+  --bd-stroke: var(--bd-model);
+  --bd-text: var(--bd-model);
+}
+
+.bd-el.inked.role-target,
+.bd-el.inked .role-target {
+  --bd-stroke: var(--bd-target);
+  --bd-text: var(--bd-target);
+}
+
+.bd-el.inked.role-rating,
+.bd-el.inked .role-rating {
+  --bd-stroke: var(--bd-rating);
+  --bd-text: var(--bd-rating);
+}
+
+.bd-el.inked.role-kb,
+.bd-el.inked .role-kb {
+  --bd-stroke: var(--bd-kb);
+  --bd-text: var(--bd-kb);
+}
+
+.bd-el.inked.role-muted,
+.bd-el.inked .role-muted {
+  --bd-stroke: var(--bd-muted);
+  --bd-text: var(--bd-muted);
+}
+
+/* WP-80: example texts on the board (the KBRS / GBRS one-liners) in the slide pink */
+.bd-el.inked.role-example,
+.bd-el.inked .role-example {
+  --bd-stroke: var(--bd-example);
+  --bd-text: var(--bd-example);
+}
+
+/* WP-66 (round 12): neutral ink INSIDE a coloured part (the feature table's caption sits in the
+   item-blue `table` part but is a plain remark) - ghost stays ghost like every other role */
+.bd-el.inked .role-ink {
+  --bd-stroke: var(--bd-ink);
+  --bd-text: var(--bd-ink);
+}
+
+/* erased by the instructor (right-click / Shift+click): a little fainter than a plain ghost */
+.bd-el.erased {
+  opacity: 0.22;
+}
+
+.bd-shape {
+  stroke: var(--bd-stroke);
+  fill: none;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.bd-fill {
+  fill: var(--bd-card);
+}
+
+.bd-thin {
+  stroke-width: 1;
+}
+
+.bd-ring {
+  stroke-width: 1.9;
+}
+
+.bd-mark {
+  stroke-width: 1.9;
+}
+
+.bd-path-seg {
+  stroke-width: 3.2;
+}
+
+.bd-dot {
+  fill: var(--bd-stroke);
+  stroke: none;
+}
+
+.bd-arrow {
+  stroke-width: 1.7;
+}
+
+.bd-dashed .bd-arrow {
+  stroke-dasharray: 6 4;
+}
+
+.bd-hit {
+  fill: transparent;
+  stroke: none;
+  pointer-events: all;
+}
+
+.bd-text {
+  fill: var(--bd-text);
+  dominant-baseline: central;
+}
+
+.bd-label {
+  font-weight: 600;
+}
+
+.bd-strong {
+  font-weight: 700;
+}
+
+.bd-italic {
+  font-style: italic;
+}
+
+.bd-note-line {
+  font-style: italic;
+}
+
+/* WP-82: a coloured span inside a label ("(uCF)" in user red after plain-ink words): the tspan
+   reads the role variable set on itself, ghost like its text until the part is inked */
+.bd-span {
+  fill: var(--bd-text);
+}
+
+/* WP-82: the deck's watermark (a faint logo behind the drawing) never catches clicks */
+.bd-watermark {
+  pointer-events: none;
+}
+
+/* arrowheads: one marker per role (markers cannot read the referencing line's variables) */
+.bd-head {
+  fill: var(--bd-ghost);
+}
+.bd-head-ink {
+  fill: var(--bd-ink);
+}
+.bd-head-user {
+  fill: var(--bd-user);
+}
+.bd-head-item {
+  fill: var(--bd-item);
+}
+.bd-head-model {
+  fill: var(--bd-model);
+}
+.bd-head-target {
+  fill: var(--bd-target);
+}
+.bd-head-rating {
+  fill: var(--bd-rating);
+}
+.bd-head-kb {
+  fill: var(--bd-kb);
+}
+.bd-head-muted {
+  fill: var(--bd-muted);
+}
+.bd-head-example {
+  fill: var(--bd-example); /* WP-80 */
+}
+
+/* the step's focus: a halo + a little pop; shapes get a heavier stroke */
+.bd-el.focus {
+  filter: drop-shadow(0 0 5px var(--bd-halo));
+}
+
+.bd-el.focus .bd-shape:not(.bd-thin) {
+  stroke-width: 2.6;
+}
+
+.bd-el.focus .bd-label,
+.bd-el.focus .bd-note-line {
+  font-weight: 700;
+}
+
+.bd-el.clickable {
+  cursor: pointer;
+}
+
+.bd-el.clickable:hover {
+  opacity: 0.7;
+}
+
+/* side cards (goals & metrics, problem types): the card frame is a quieter box than a tree node */
+.bd-card {
+  stroke-dasharray: none;
+}
+
+.bd-col-title {
+  fill: var(--bd-text);
+  opacity: 0.85;
+}
+
+.bd-el.focus .bd-item {
+  font-weight: 700;
+}
+
+.bd-el.inked .bd-dot {
+  fill: var(--bd-stroke);
+}
+
+/* list-card level-2 items: hollow bullet, numbered markers for the level-1 message items */
+.bd-hollow {
+  fill: var(--bd-card);
+  stroke-width: 1.3;
+}
+
+.bd-marker {
+  text-anchor: middle;
+}
+
+.bd-item-2 {
+  font-style: italic;
+}
+
+/* mini model sketches inside the boxes; thumbs keep their stroke width when scaled */
+.bd-inner {
+  opacity: 0.85;
+}
+
+.bd-thumb {
+  vector-effect: non-scaling-stroke;
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+
+/* WP-67 (system board): a dashed box = no lab module (like a dashed edge); the funnel ribbon's
+   bands and the A/B bars take a tint of their stroke colour so the shape reads even as a ghost */
+.bd-dashed .bd-box {
+  stroke-dasharray: 6 4;
+}
+
+.bd-band {
+  fill: color-mix(in srgb, var(--bd-stroke) 14%, var(--bd-card));
+}
+
+.bd-bar {
+  fill: color-mix(in srgb, var(--bd-stroke) 32%, var(--bd-card));
+}
+
+.bd-bar-b {
+  fill: color-mix(in srgb, var(--bd-stroke) 58%, var(--bd-card));
+}
+
+.swatch-ink {
+  background: var(--strong);
+}
+
+.bd-el.inked.clickable:hover {
+  opacity: 1;
+}
+
+.bd-el.inked.clickable:hover .bd-shape:not(.bd-thin) {
+  stroke-width: 2.4;
+}
+
+/* inking animation: strokes draw themselves (board.js sets dasharray = length, then offset -> 0),
+   text fades in after the same per-element delay; prefers-reduced-motion disables all of it */
+.bd-el.drawing .bd-shape {
+  transition: stroke-dashoffset 0.7s ease-out;
+}
+
+.bd-el.drawing .bd-text {
+  animation: bd-fade 0.55s ease-out both;
+  animation-delay: var(--bd-delay, 0ms);
+}
+
+@keyframes bd-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.board-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.legend-chip {
+  font-size: 10.5px;
+}
+
+.legend-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--strong);
+}
+
+.swatch-user {
+  background: var(--red);
+}
+
+.swatch-item {
+  background: #1f6fd1;
+}
+
+[data-theme="dark"] .swatch-item {
+  background: #6aa7ff;
+}
+
+.swatch-model {
+  background: var(--green);
+}
+
+.swatch-target {
+  background: #7e57c2;
+}
+
+[data-theme="dark"] .swatch-target {
+  background: #b39ddb;
+}
+
+.swatch-rating {
+  background: #e07b00;
+}
+
+[data-theme="dark"] .swatch-rating {
+  background: #ffb74d;
+}
+.swatch-example {
+  background: #c2185b; /* WP-80 */
+}
+[data-theme="dark"] .swatch-example {
+  background: #f48fb1;
+}
+
+.swatch-dashed {
+  background: repeating-linear-gradient(90deg, var(--strong) 0 4px, transparent 4px 7px);
+}
+
+/* -- narration card ------------------------------------------------------------------------- */
+
+.slide-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.slide-title {
+  margin: 12px 0 8px;
+  font-size: 18px;
+  font-size: clamp(16px, 3.2cqh, 26px);
+  line-height: 1.25;
+  color: var(--navy);
+}
+
+.slide-text {
+  margin: 0;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  font-size: 15px;
+  font-size: clamp(14px, 2.7cqh, 22px);
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+.slide-text strong {
+  color: var(--navy);
+}
+
+.slide-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.slide-meta:empty {
+  display: none;
+}
+
+.slide-ref {
+  font-style: italic;
+}
+
+.slide-note {
+  border: 1px dashed var(--line);
+}
+
+/* WP-75 (round 2): "seen in the wild" as a stack of mini product rows. Each example: the source as
+   a small tag at the top right, the headline below it full width as a bold row title with a "see
+   all" chevron. App palette only (navy accent, surface, line, muted) so it follows both themes -
+   the first version copied the instructor's slide colours into a narrow inline chip and wrapped a
+   five-word headline word by word (rejected); round 3 removed a decorative poster strip under the
+   title (pure ornament, cost 16 px per card). Hidden when a step has none (:empty). */
+.slide-headlines {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.slide-headlines:empty {
+  display: none;
+}
+
+.slide-headlines-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+/* WP-82: the wrap-up's "doors on this board" - one row per lab page the board opens, in the
+   narration's order; the tag says at which step the door lives. Same family as the wild cards. */
+.slide-doors {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.slide-doors:empty {
+  display: none;
+}
+
+/* one row = one lab page: name left, then flush right the page's sidebar emoji and the arrow */
+.door-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--navy);
+  border-radius: var(--r-lg);
+  background: color-mix(in srgb, var(--navy) 4%, var(--card));
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-size: clamp(12px, 2cqh, 16px);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.door-row:hover {
+  border-color: var(--navy);
+  color: var(--navy);
+}
+
+.door-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.door-icon {
+  flex: none;
+  font-size: 1.1em;
+  line-height: 1;
+}
+
+.door-go {
+  flex: none;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.door-row:hover .door-go {
+  color: var(--navy);
+}
+
+/* WP-82: counter + "SVG ↓" (the board as a standalone file) on the card's top right */
+.slide-card-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.slide-export {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--on-navy); /* WP-147: see .btn-primary (app.css) */
+  background: var(--navy);
+  border: 1px solid var(--navy);
+  border-radius: 999px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  transition:
+    filter 0.12s ease,
+    transform 0.12s ease;
+}
+
+.slide-export:hover {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+}
+
+.slide-export svg {
+  display: block;
+}
+
+.wild-card {
+  padding: 6px 10px 7px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--navy);
+  border-radius: var(--r-lg);
+  background: color-mix(in srgb, var(--navy) 4%, var(--card));
+}
+
+.wild-tag {
+  display: block;
+  text-align: right;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.wild-title {
+  font-weight: 700;
+  font-size: 13px;
+  font-size: clamp(13px, 2.1cqh, 17px);
+  line-height: 1.3;
+  color: var(--ink);
+}
+
+.wild-title::after {
+  content: " ›";
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.presenting .wild-title {
+  font-size: clamp(15px, 2.3cqh, 19px);
+}
+
+/* -- presenting mode: bigger card type; the board already fills the height the hidden sidebar
+   and header leave (flex layout above), no extra rule needed */
+.presenting .slide-text {
+  font-size: 1.05em;
+  font-size: clamp(18px, 2.9cqh, 26px);
+}
+
+.presenting .slide-title {
+  font-size: 1.25em;
+  font-size: clamp(20px, 3.4cqh, 30px);
+}

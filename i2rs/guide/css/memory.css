@@ -1,0 +1,354 @@
+/* WP-116 (beta): Memory-based CF overview page (pages/memory-page.js). Reuses .panel/.chip/.pill/.data-table/.warn-banner from app.css /
+   trace.css and the Data page's sub-panel look (bordered --surface boxes, navy headings); colours are tokens only, so the dark theme is free.
+
+   Text size: ONE variable. `--memory-zoom` (set on .memory-page by the - / + group in the title row, components/zoom-control.js, 0.7 ... 1.4,
+   1 by default, kept in localStorage as i2rs.zoom.text.memory_cf) multiplies the page's base font size (16 px at 1.0x: the lecture screen is read
+   from the back of a room); every other size on the page is in em of that base, so headings, tables, cards and formulas (KaTeX's em) all follow
+   one factor. The panel / chip / pill / table sizes of app.css are px, so they are re-stated in em here, inside .memory-page only.
+
+   Width: the page uses the FULL width of the main area - no centred or capped column. Text, panels and tables fill it. The three tables (§ 1
+   comparison, § 2 measures, § 4 when to use which) are `width: 100%` with FIXED layout: their column widths are percentages set by
+   components/col-resizer.js (its `<colgroup>`), which the reader changes by dragging the edge between two headings (kept per table in
+   localStorage as i2rs.cols.memory_cf.<table>); long text wraps inside its cell. The prediction rules (§ 3) are cards in a grid of em-based
+   columns (3 at 1536, 4 at 1920 at 1.0x). */
+
+.memory-page {
+  --memory-base: 16px;
+  font-size: calc(var(--memory-base) * var(--memory-zoom, 1));
+}
+.memory-page h2 {
+  margin: 0;
+  font-size: 1.3em;
+  color: var(--navy);
+}
+.memory-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 8px;
+}
+.memory-beta {
+  margin-left: 0;
+  font-size: 0.8em;
+}
+/* the - / + group: the look of the uCF / iCF panels' group (trace.css scopes it to .layout-f, which this page is not); fixed px, so a step
+   never moves it. margin-left:auto puts it at the far right of the title row. */
+.memory-page .zoom-buttons {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: 2px 0 0 auto;
+  align-self: flex-start; /* pinned to the top of the row: the title grows with the factor, and a centred group would drift down with it */
+}
+.memory-page .zoom-btn {
+  width: 22px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--card);
+  color: var(--navy);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.memory-page .zoom-btn:hover:not(:disabled) {
+  border-color: var(--navy);
+}
+.memory-page .zoom-btn:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+}
+.memory-page .zoom-btn:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: 1px;
+}
+.memory-page .zoom-value {
+  min-width: 3.2em;
+  text-align: center;
+  font-size: 11px;
+  font-weight: var(--fw-body, 400);
+  color: var(--strong);
+  font-variant-numeric: tabular-nums;
+}
+
+/* key words: a text of config/i18n marks them with **...** and util/emphasis.js draws `strong.key` - coloured and bold, a few per row */
+.memory-page .key {
+  color: var(--navy);
+  font-weight: var(--fw-heading, 600);
+}
+
+.memory-intro {
+  margin: 0 0 10px;
+  line-height: 1.5;
+  color: var(--strong);
+}
+.memory-beta-note {
+  margin: 0 0 10px;
+  font-size: 0.875em;
+}
+
+/* contents chips */
+.memory-toc {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.memory-toc .chip {
+  font: inherit;
+  font-size: 0.8em;
+  cursor: pointer;
+}
+.memory-toc .chip:hover {
+  border-color: var(--navy);
+}
+
+.memory-page .pill {
+  font-size: 0.75em;
+}
+.memory-page .panel-head h3 {
+  font-size: 1em;
+}
+.memory-section .panel-head {
+  cursor: default;
+}
+.memory-section-intro {
+  margin: 0 0 12px;
+  line-height: 1.5;
+  color: var(--strong);
+}
+.memory-note {
+  margin: 8px 0 0;
+  font-size: 0.85em;
+  line-height: 1.45;
+  color: var(--strong);
+}
+/* WP-118 (1c): the course rule under the comparison table - a note like the others; its lead-in in the label weight, its source line muted */
+.memory-rule strong {
+  font-weight: var(--fw-label);
+  color: var(--ink);
+}
+.memory-rule .memory-rule-src {
+  color: var(--muted);
+}
+.memory-loading {
+  margin: 0;
+  font-size: 0.85em;
+  color: var(--muted);
+}
+/* the literature's limit, once, under the last section */
+.memory-offline {
+  margin: 0 0 8px;
+  font-size: 0.85em;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+/* tables: § 1, § 2 and § 4 - the full width, fixed layout once the resizer has set its <colgroup>, long text wraps (break-word, not
+   "anywhere": the latter makes every column's minimum tiny and the browser then squeezes the criterion column in auto layout) */
+.memory-page table.data-table.memory-table {
+  width: 100%;
+  font-size: 1em; /* the shared table sets 12px: that would stop the table following the page's factor */
+}
+.memory-page table.data-table.memory-table.col-resizable {
+  table-layout: fixed;
+}
+/* round 3 (sticky headings): collapsed borders do not travel with a sticky cell, so the tables use separate borders (no spacing); and the
+   table's wrapper must not scroll - `.table-wrap { overflow-x: auto }` (trace.css) would make IT the scroller the heads stick to */
+.memory-page table.data-table.memory-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.memory-page .table-wrap {
+  overflow: visible;
+}
+/* round 3: each section is its own container; its heading hooks at the top of the scroller (.main-content) and the next section's heading
+   pushes it out when that one arrives (a sticky box never leaves its container). Opaque, so the text scrolling under it is hidden; the
+   heading's own bottom line (app.css .panel-head) is the thin rule under it. Only the heading sticks, not the intro line: heading + intro
+   would take 18.6 % (comparison) to 22.1 % (measures) of a 1536 x 864 view (679 px) at 1.0x (heading alone: 6.2 %, 7.5 % at 1.4x), over
+   the ~15 % the user will give. */
+.memory-section > .panel-head {
+  position: sticky;
+  top: var(--mcf-sticky-top, 0px); /* = minus the scroller's padding: a sticky box sticks to the scroller's CONTENT edge, 20 px below its top */
+  z-index: 4;
+  background: var(--card);
+  border-radius: var(--r-lg) var(--r-lg) 0 0; /* the panel's own corners: a square sticky box would poke out of them */
+}
+.memory-table th,
+.memory-table td {
+  vertical-align: top;
+  padding: 5px 10px;
+  font-size: 0.875em;
+  line-height: 1.4;
+  overflow-wrap: break-word;
+}
+.memory-page table.data-table.memory-table thead th {
+  position: sticky; /* round 3: hooks under the section heading while the table scrolls; also the anchor of the column edge's handle */
+  top: calc(var(--mcf-sticky-top, 0px) + var(--mcf-head-h, 2.6em)); /* the section heading's real height (memory-page.js, per section) under the scroller's top */
+  z-index: 3; /* under the section heading (4), over the cells; the handle (2) lives inside this stacking context */
+  font-size: 0.8em; /* beats the shared `table.data-table thead th` (10.5px): the head follows the factor too */
+}
+.memory-table tbody th {
+  border-bottom: 1px solid var(--line); /* the shared table styles td and thead th only */
+}
+.memory-table .memory-crit {
+  text-align: left;
+  font-weight: var(--fw-label);
+  color: var(--ink);
+  text-transform: none;
+}
+.memory-table td.memory-src {
+  font-size: 0.8em; /* the source column is a footnote: smaller than the cells it annotates */
+  color: var(--muted);
+}
+.memory-tbd {
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* the draggable column edge (.col-resizer, components/col-resizer.js) is a shared component: its rules are in app.css, for every page that makes a table's columns resizable */
+
+/* § 2 rows: the name cell (name + foil / fault badge + the mean-convention flag), the formulas, the text, the two bullet lists */
+.memory-measure-name {
+  display: block;
+  color: var(--navy);
+  font-weight: var(--fw-heading, 600);
+}
+.memory-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.memory-badges .pill {
+  margin-left: 0;
+  background: var(--card);
+  border: 1px solid var(--line);
+  text-transform: none;
+}
+.memory-badges .pill.tag-foil {
+  color: var(--amber-ink);
+  background: var(--amber-bg);
+  border-color: var(--amber-line);
+  cursor: help;
+}
+.memory-badges .pill.tag-fault {
+  color: var(--red);
+  cursor: help;
+}
+.memory-formulas {
+  min-width: 0;
+}
+.memory-formula-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.memory-measures-table .memory-tex {
+  font-size: 0.8em; /* the widest formula (Pearson) fits the default column at 1536 px without scrolling */
+}
+.memory-measures-table .memory-what {
+  margin: 0;
+  line-height: 1.45;
+}
+.memory-measures-table .memory-note {
+  margin: 6px 0 0;
+  font-size: 0.9em;
+  color: var(--muted);
+}
+.memory-bullets {
+  margin: 0;
+  padding-left: 1.1em;
+  line-height: 1.45;
+}
+.memory-bullets li + li {
+  margin-top: 4px;
+}
+
+/* § 3 cards: a grid of as many 23.5em columns as fit (3 at 1536 px, 4 at 1920 px at 1.0x), each card a column: title row, formulas, text */
+.memory-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(23.5em, 1fr)); /* em: 376 px at 1.0x, so a larger text size gets fewer, wider columns */
+  gap: 10px;
+  align-items: stretch;
+}
+.memory-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+  padding: 10px 12px;
+  min-width: 0;
+}
+.memory-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.memory-card-head h4 {
+  margin: 0;
+  font-size: 1em;
+  color: var(--navy);
+}
+.memory-card-head .pill {
+  margin-left: 0;
+  background: var(--card);
+  border: 1px solid var(--line);
+}
+/* formulas first (they are what the lab traces and what the eye looks for), then the text; both stacked in the card's column */
+.memory-card-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.memory-card-formulas {
+  order: -1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  margin-bottom: 8px;
+}
+.memory-card-text {
+  min-width: 0;
+  font-size: 0.875em;
+}
+.memory-card .memory-what {
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* the formulas: display math, scrolls inside its own box rather than widening the page */
+.memory-formula {
+  margin: 0;
+  min-width: 0;
+}
+.memory-formula figcaption {
+  font-size: 0.75em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.memory-tex {
+  overflow-x: auto;
+  overflow-y: hidden;
+  font-size: 0.8em; /* a 4-column card's text width fits the widest formula at every step, which 0.85em did not */
+}
+.memory-tex .katex-display {
+  margin: 0.3em 0;
+  text-align: left;
+}
+.memory-tex .katex-display > .katex {
+  text-align: left;
+}
+.memory-formula-note {
+  margin: 2px 0 0;
+  font-size: 0.8em;
+  color: var(--muted);
+}

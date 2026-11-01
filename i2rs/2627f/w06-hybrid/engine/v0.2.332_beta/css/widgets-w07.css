@@ -1,0 +1,754 @@
+/* WP-74 (D-149, D-150; brief 09): the look of the new modes of the I2RS w07 deck (evaluation): table-highlight modes split, errors, confusion, dcg, timeline (widgets/table-*.js), pipeline mode flow (pipeline-flow.js) and
+   compare mode ranked (compare-ranked.js). Same rules as widgets.css: tokens only, no colour literal; units are stage pixels (a widget draws a box of 1680 x 600 and scales it once to its room, widgets/frames.js `fit`); the
+   semantic roles of text are engine/css/roles.css ([data-role]) and no colour is written on an element that carries one. Motion is not here: it is the Plan a widget returns (opacity, transform; D-039).
+   Prefixes: .sp split, .er errors, .cf confusion, .dc dcg, .tl timeline, .fl flow, .rk ranked. A role or a category is never colour alone (D-068): every colour here travels with a shape, a frame style or a mark.
+   The cells of the matrix modes reuse widgets.css (.mx-cell, .mx-user). */
+
+/* ---------- table-highlight, mode split (widgets/table-split.js) ----------
+   training: blue, round mark, solid ring; validation: purple, diamond mark, dashed ring; test: gold, square mark, double ring. */
+.sp-mat{position:absolute;left:0;top:0}
+.sp-ob{position:absolute;box-sizing:border-box;display:grid;place-items:center;border-radius:10px;background:var(--ink-soft);border:3px solid var(--ink-soft);color:var(--ground);font:600 34px/1 var(--f-body);font-variant-numeric:tabular-nums}
+.sp-ro{position:absolute;box-sizing:border-box;border-radius:13px}
+.sp-ro.sp-T{border:4px solid var(--emph)}
+.sp-ro.sp-V{border:4px dashed var(--term)}
+.sp-ro.sp-X{border:7px double var(--key)}
+.sp-mk{position:absolute;right:-10px;top:-10px;width:22px;height:22px;box-sizing:border-box;border:3px solid var(--ground)}
+.sp-T .sp-mk{border-radius:50%;background:var(--emph)}
+.sp-V .sp-mk{background:var(--term);transform:rotate(45deg) scale(.85)}
+.sp-X .sp-mk{border-radius:4px;background:var(--key)}
+.sp-veil{position:absolute;box-sizing:border-box;border-radius:13px;border:3px dashed var(--ink-soft);background:color-mix(in srgb,var(--ink) 10%,var(--ground));color:var(--ink-soft)}
+.sp-lock{position:absolute;box-sizing:border-box;display:grid;place-items:center;border-radius:13px;background:color-mix(in srgb,var(--key) 30%,var(--ground));color:var(--ink)}
+.sp-legend{position:absolute;display:flex;align-items:center;gap:12px;font:600 26px/1.2 var(--f-body);color:var(--ink-soft);white-space:nowrap}
+.sp-sw{display:block;flex:none;width:30px;height:30px;box-sizing:border-box}
+.sp-sw.sp-T{border-radius:50%;background:var(--emph)}
+.sp-sw.sp-V{background:var(--term);transform:rotate(45deg) scale(.8)}
+.sp-sw.sp-X{border-radius:5px;background:var(--key)}
+.sp-bar{position:absolute}
+.sp-bar-title{position:absolute;font:600 28px/1.2 var(--f-body);color:var(--ink);white-space:nowrap}
+.sp-ratio{position:absolute;right:0;top:-44px;font:600 28px/1.2 var(--f-body);color:var(--ink-soft);font-variant-numeric:tabular-nums;white-space:nowrap}
+.sp-part{position:absolute;top:0;height:64px;box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:0 14px;overflow:hidden;white-space:nowrap;color:var(--ink);font:600 26px/1 var(--f-body)}
+.sp-part b{font-size:32px;font-variant-numeric:tabular-nums}
+.sp-part span{color:var(--ink-soft)}
+.sp-learn{border:3px solid var(--ink-soft);background:color-mix(in srgb,var(--ink) 12%,var(--ground))}
+.sp-aside{border:3px dashed var(--ink-soft);background:var(--ground)}
+.sp-p.sp-T{border:4px solid var(--emph);background:color-mix(in srgb,var(--emph) 18%,var(--ground))}
+.sp-p.sp-V{border:4px dashed var(--term);background:color-mix(in srgb,var(--term) 16%,var(--ground))}
+.sp-p.sp-X{border:6px double var(--key);background:color-mix(in srgb,var(--key) 24%,var(--ground))}
+.sp-card{position:absolute;box-sizing:border-box;padding:16px 18px;border-radius:20px;background:color-mix(in srgb,var(--ink) 5%,var(--ground));border:3px solid var(--ink-soft);color:var(--ink-soft)}
+.sp-cT{border:4px solid var(--emph)}
+.sp-cV{border:4px dashed var(--term)}
+.sp-cX{border:6px double var(--key)}
+.sp-card-head{display:flex;align-items:center;gap:12px;height:44px;font:600 30px/1.1 var(--f-body);color:var(--ink);white-space:nowrap}
+.sp-card-text{position:absolute;text-align:center;font:400 26px/1.25 var(--f-body);color:var(--ink)}
+.sp-card-mock{font-weight:600}
+.sp-fold{position:absolute}
+.sp-fold-name{position:absolute;left:0;top:0;width:110px;font:600 26px/52px var(--f-body);color:var(--ink-soft);white-space:nowrap}
+.sp-avg{color:var(--ink)}
+.sp-seg{position:absolute;top:0;width:64px;height:52px;box-sizing:border-box;border-radius:10px}
+.sp-seg.sp-T{border:4px solid var(--emph);background:color-mix(in srgb,var(--emph) 16%,var(--ground))}
+/* WP-93 (D-179, the user's review of 2026-11-01): the part held out in a round of the cross-validation is VALIDATION, so a fold's held-out segment wears the validation role (a purple dashed ring and a diamond), as in the legend and the bar; the test role (gold) is not drawn here */
+.sp-seg.sp-V{border:4px dashed var(--term);background:color-mix(in srgb,var(--term) 16%,var(--ground))}
+/* WP-93 (D-179): press 2 names the technique (a user icon and the name) and warns in the negative role: a dashed red frame, a red wash and a cross; the text stays in the ink (red text on the red wash is 4.34 : 1 in the light theme, under 4.5; the ink on it is 11.6 : 1 light and 12.3 : 1 dark) */
+.sp-peruser{position:absolute;display:flex;align-items:center;gap:14px;font:700 32px/1.1 var(--f-body);color:var(--ink);white-space:nowrap}
+.sp-pu-icon{flex:none;color:var(--ink-soft)}
+.sp-warn{position:absolute;box-sizing:border-box;display:flex;align-items:center;gap:18px;padding:14px 22px;border:4px dashed var(--neg);border-radius:16px;background:color-mix(in srgb,var(--neg) 10%,var(--ground));font:600 28px/1.3 var(--f-body);color:var(--ink)}
+.sp-cross{flex:none;fill:none;stroke:var(--neg);stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.sp-score{position:absolute;border-radius:4px;background:var(--emph)}
+/* WP-93 (D-183, the user's review of 2026-11-01, page 16 press 5): the bar of the average is the mean of the k VALIDATION scores, so it wears the validation role like the held-out segments beside it (a 4 px dashed purple ring and a purple wash); it was the test gold, which the folds never show */
+.sp-score-avg{box-sizing:border-box;border:4px dashed var(--term);background:color-mix(in srgb,var(--term) 16%,var(--ground))}
+
+/* ---------- table-highlight, mode errors (widgets/table-errors.js) ----------
+   absolute errors: solid blue bars; squared errors: purple bars with a dashed frame (the area, told as a different kind of bar); the long tail: grey bars of popularity, red dashed bars of error. Every colour travels with a label, a frame style or both. */
+.er-tbl,.er-ch{position:absolute;left:0;top:0}
+.er-head{position:absolute;font:600 24px/36px var(--f-body);color:var(--ink-soft);white-space:nowrap}
+.er-row{position:absolute}
+.er-stars{position:absolute;display:flex;align-items:center;gap:10px;color:var(--ink-soft)}
+.er-stars.er-p{color:var(--emph)}
+.er-num{font:600 28px/1 var(--f-body);color:var(--ink);font-variant-numeric:tabular-nums}
+.er-bar{position:absolute;box-sizing:border-box;border-radius:4px}
+.er-abs{background:var(--emph)}
+.er-sq{border:3px dashed var(--term);background:color-mix(in srgb,var(--term) 30%,var(--ground))}
+.er-val{position:absolute;font:600 26px/50px var(--f-body);color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.er-bad{position:absolute;font:600 24px/32px var(--f-body);white-space:nowrap}
+.er-card{position:absolute;box-sizing:border-box;padding:16px 18px;border-radius:20px;background:color-mix(in srgb,var(--ink) 5%,var(--ground))}
+.er-card-m{border:4px solid var(--emph)}
+.er-card-r{border:4px dashed var(--term)}
+.er-card-name{font:700 40px/1.1 var(--f-title);color:var(--ink)}
+.er-card-how{margin-top:6px;font:400 22px/1.25 var(--f-body);color:var(--ink-soft)}
+.er-card-val{position:absolute;font:700 72px/1 var(--f-title);color:var(--ink);font-variant-numeric:tabular-nums}
+.er-delta{position:absolute;font:600 30px/1 var(--f-body);color:var(--ink);font-variant-numeric:tabular-nums}
+.er-card-why{position:absolute;font:600 24px/1.25 var(--f-body);color:var(--ink)}
+.er-ct{position:absolute;font:600 24px/1.2 var(--f-body);color:var(--ink-soft);white-space:nowrap}
+.er-pop{position:absolute;border-radius:4px;background:var(--ink-soft)}
+.er-err{position:absolute;box-sizing:border-box;border-radius:4px;border:3px dashed var(--neg);background:color-mix(in srgb,var(--neg) 24%,var(--ground))}
+.er-itm{position:absolute;text-align:center;font:600 20px/1.2 var(--f-body);color:var(--ink-soft)}
+.er-note{position:absolute;font:600 30px/1.25 var(--f-body)}
+/* WP-93 (D-174, the user's w07 review, page 9): under each card its formula, symbolic fraction = the fraction with the numbers = the value (formula.js), and the legend of r, p and n above the cards */
+.er-formula{position:absolute;font:700 28px/1.2 var(--f-body);color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.er-legend{position:absolute;font:600 24px/32px var(--f-body);color:var(--ink-soft);white-space:nowrap}
+
+/* ---------- table-highlight, mode confusion (widgets/table-confusion.js) ----------
+   a right outcome (TP, TN) is a solid green frame and a tick, a wrong one (FP, FN) a dashed red frame and a cross. Bars: precision solid blue, recall dashed purple, the wrong average dashed grey, F1 solid gold: each also has its label. */
+.cf-mat{position:absolute;left:0;top:0}
+.cf-ch{position:absolute;text-align:center;font:600 26px/40px var(--f-body);color:var(--ink-soft)}
+.cf-rh{position:absolute;display:flex;align-items:center;justify-content:flex-end;text-align:right;font:600 26px/1.2 var(--f-body);color:var(--ink-soft)}
+.cf-empty{position:absolute;box-sizing:border-box;border:3px dashed var(--todo);border-radius:14px}
+.cf-cell{position:absolute;box-sizing:border-box;border-radius:14px;padding:12px 14px;color:var(--ink)}
+.cf-good{border:4px solid var(--pos);background:color-mix(in srgb,var(--pos) 16%,var(--ground))}
+.cf-bad{border:4px dashed var(--neg);background:color-mix(in srgb,var(--neg) 14%,var(--ground))}
+.cf-abbr{display:block;font:700 30px/1 var(--f-title);color:var(--ink)}
+.cf-name{display:block;margin-top:4px;font:400 18px/1.2 var(--f-body);color:var(--ink-soft)}
+.cf-n{position:absolute;left:14px;bottom:8px;font:700 52px/1 var(--f-title);font-style:normal;font-variant-numeric:tabular-nums;color:var(--ink)}
+.cf-mark{position:absolute;right:12px;top:12px;fill:none;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.cf-good .cf-mark{stroke:var(--pos)}
+.cf-bad .cf-mark{stroke:var(--neg)}
+/* WP-93 (D-176, the user's review of 2026-11-01): a cell that the formula on the screen does not use has a GREY twin on top of it: the same frame shape (solid for a right outcome, dashed for a wrong one, D-068), the ground washed with the ink, the soft ink for the name,
+   the count and the mark. Measured: the soft ink on the wash 6.3 : 1 in both themes, the frame on the ground 3.2 : 1 (light) and 4.0 : 1 (dark) */
+.cf-grey.cf-good{border:4px solid color-mix(in srgb,var(--ink-soft) 65%,var(--ground));background:color-mix(in srgb,var(--ink) 9%,var(--ground))}
+.cf-grey.cf-bad{border:4px dashed color-mix(in srgb,var(--ink-soft) 65%,var(--ground));background:color-mix(in srgb,var(--ink) 9%,var(--ground))}
+.cf-grey .cf-abbr,.cf-grey .cf-n{color:var(--ink-soft)}
+.cf-grey .cf-mark{stroke:var(--ink-soft)}
+/* WP-93 (D-177, board 3 candidate A): the matrix of a recommender in presses 4 and 5 of `measures`: the shared row heads and a column group (name, column heads, four cells of 120 x 172: abbreviation, count at 40 px, the mark) */
+.cf-sh,.cf-grp{position:absolute}
+.cf-rh-sm{font:600 20px/1.15 var(--f-body)}
+.cf-ch-sm{font:600 20px/36px var(--f-body)}
+.cf-gn{position:absolute;text-align:center;font:700 28px/40px var(--f-title);color:var(--ink)}
+.cf-mini .cf-n{font-size:40px}
+.cf-ring{position:absolute;box-sizing:border-box;border-radius:20px}
+.cf-ring-bad{border:5px double var(--neg)}
+.cf-ring-good{border:5px double var(--pos)}
+.cf-tag{position:absolute;box-sizing:border-box;text-align:center;font:700 22px/1 var(--f-body);padding:6px 8px;border-radius:8px;background:var(--ground);border:3px solid var(--neg)}
+.cf-q{position:absolute;font:700 34px/44px var(--f-title);color:var(--ink)}
+.cf-task{position:absolute;box-sizing:border-box;padding:12px 22px;border-radius:18px;border:3px solid var(--ink-soft);background:color-mix(in srgb,var(--ink) 5%,var(--ground))}
+.cf-task-head{display:flex;align-items:center;gap:16px;height:42px;font:700 32px/1.1 var(--f-title);color:var(--ink)}
+.cf-task-head .pg-icon{flex:none;color:var(--ink-soft)}
+.cf-task-row{box-sizing:border-box;display:flex;align-items:center;gap:18px;height:48px;margin-top:2px;padding:0 16px;border-radius:12px}
+.cf-task-row .cf-abbr{flex:none;width:52px;font-size:34px}
+.cf-worse{border:5px double var(--neg);background:color-mix(in srgb,var(--neg) 12%,var(--ground))}
+.cf-bear{border:3px dashed var(--ink-soft);background:var(--ground)}
+.cf-story-text{font:600 26px/1.2 var(--f-body);color:var(--ink);white-space:nowrap}
+.cf-verdict{margin-left:auto;flex:none;font:700 24px/1 var(--f-body);font-style:normal;color:var(--ink)}
+.cf-panel{position:absolute;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;padding:16px 22px 66px;border-radius:20px;background:color-mix(in srgb,var(--ink) 5%,var(--ground));border:3px solid var(--ink-soft)}
+.cf-panel.cf-bad{border:4px dashed var(--neg)}
+/* WP-93 (D-176): the panel of press 5 that says it in WORDS (no formula, no track, no gauge): the track's room is not reserved, the sentence is 32 px like a formula line */
+.cf-panel-plain{padding-bottom:16px}
+.cf-panel-words{font:700 32px/1.25 var(--f-body);color:var(--ink)}
+.cf-panel-title{font:700 36px/1.1 var(--f-title);color:var(--ink)}
+.cf-aka{font:400 26px/1 var(--f-body);color:var(--ink-soft)}
+.cf-panel-how{margin-top:6px;font:400 24px/1.25 var(--f-body);color:var(--ink-soft)}
+/* WP-93 (D-174, the user's w07 review, page 10): a panel's formula is ONE line, symbolic fraction = fraction with the numbers = value, and the gauge lies along the panel's foot (track and gauge both bottom: 22 px of the padding box, 30 px high). The content is centred in the room above them: the bottom padding is the foot's 22 + 30 plus 14 (a fraction line is
+   about 73 px high, so a 172 px panel keeps 19 px between the formula and the track). */
+.cf-formula{font:700 32px/1.2 var(--f-body);color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.cf-panel-title + .cf-formula,.cf-panel-how + .cf-formula{margin-top:18px}
+.cf-line{display:flex;align-items:center;justify-content:space-between;gap:24px}
+.cf-line .cf-panel-how{margin-top:0;font-size:22px;white-space:nowrap}
+.cf-track{position:absolute;left:8px;right:8px;bottom:22px;height:30px;box-sizing:border-box;border:3px solid var(--ink-soft);border-radius:8px}
+.cf-gauge{position:absolute;border-radius:4px;background:var(--emph)}
+.cf-imb{position:absolute;display:flex;align-items:baseline;gap:22px;white-space:nowrap}
+.cf-imb .cf-q{position:static}
+.cf-imb-note{font:600 28px/1.2 var(--f-body);color:var(--ink-soft)}
+.cf-band{position:absolute;border-radius:20px;background:color-mix(in srgb,var(--emph) 16%,var(--ground))}
+.cf-sc{position:absolute;box-sizing:border-box;border-radius:20px;border:3px solid var(--ink-soft);background:color-mix(in srgb,var(--ink) 5%,var(--ground))}
+.cf-sc-name{position:absolute;left:18px;top:14px;font:700 34px/1.1 var(--f-title);color:var(--ink)}
+.cf-bar-label{position:absolute;font:600 22px/30px var(--f-body);color:var(--ink-soft);white-space:nowrap}
+.cf-bar{position:absolute;box-sizing:border-box;border-radius:4px}
+.cf-bar-p{background:var(--emph)}
+.cf-bar-r{border:3px dashed var(--term);background:color-mix(in srgb,var(--term) 30%,var(--ground))}
+.cf-bar-a{border:3px dashed var(--ink-soft);background:var(--ground)}
+.cf-bar-f{background:var(--key)}
+.cf-bar-val{position:absolute;text-align:right;font:600 22px/30px var(--f-body);color:var(--ink);font-variant-numeric:tabular-nums}
+/* WP-93 (D-174): the F1 formula under the bars of a recommender, one line: 22 px keeps `F1 = frac(2 · P · R|P + R) = frac(2 · 0.90 · 0.15|0.90 + 0.15) = 0.26` (337 px) inside the 378 px of the card */
+.cf-sc-formula{position:absolute;font:700 22px/1.2 var(--f-body);color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* ---------- table-highlight, mode dcg (widgets/table-dcg.js) ----------
+   a gain is a gold-tinted ring AND its number; the discount is a blue bar and its value; the result card has a gold frame; the early and the late perfect item are a gold double ring in a strip of dashed cells; weights: grey (every position the same) and gold (falling). */
+.dc-g{position:absolute;left:0;top:0}
+.dc-rowlab{position:absolute;font:600 22px/1.2 var(--f-body);color:var(--ink-soft)}
+.dc-pos{position:absolute;text-align:center;font:600 28px/36px var(--f-body);color:var(--ink-soft)}
+.dc-chip{position:absolute;box-sizing:border-box;border-radius:50%;border:4px solid var(--ink-soft);text-align:center;font:700 40px/1 var(--f-title);color:var(--ink);font-variant-numeric:tabular-nums}
+/* WP-74: the gain-3 chip's ground is 66 % of the key colour; in the dark theme the body ink on it is 2.67:1, the page ground is 5.17:1 (table-dcg.js has the hand computation; the light theme passes with the ink) */
+:root[data-theme="dark"] .dc-chip[data-hi]{color:var(--ground)}
+.dc-bar{position:absolute;border-radius:4px;background:var(--emph)}
+.dc-val{position:absolute;text-align:center;font:600 24px/30px var(--f-body);color:var(--ink);font-variant-numeric:tabular-nums}
+/* WP-93 (D-174): under a bar the fraction with the position's number (a fraction line at 24 px is 54.5 px high: a 56 px row, centred) and "= value" (30 px); the symbolic fraction under the row's name is the body ink on one line (22 px, 50 px high) */
+.dc-dnum{display:flex;align-items:center;justify-content:center;height:56px;font:600 24px/1.2 var(--f-body);color:var(--ink);white-space:nowrap}
+.dc-dres{height:30px;font:700 24px/30px var(--f-body);color:var(--ink);font-variant-numeric:tabular-nums}
+.dc-dform{color:var(--ink);white-space:nowrap}
+.dc-prod{position:absolute;text-align:center}
+.dc-prod-calc{display:block;font:400 22px/1.2 var(--f-body);color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.dc-prod b{display:block;font:700 34px/1.2 var(--f-body);color:var(--ink);font-variant-numeric:tabular-nums}
+.dc-card{position:absolute;box-sizing:border-box;border-radius:20px;border:4px solid var(--key);background:color-mix(in srgb,var(--ink) 5%,var(--ground))}
+.dc-line{position:absolute;display:flex;justify-content:space-between;align-items:baseline;font:600 32px/1.2 var(--f-body);color:var(--ink)}
+.dc-line b{font:700 56px/1 var(--f-title);font-variant-numeric:tabular-nums}
+.dc-big b{font-size:72px}
+/* WP-93 (D-174): NDCG's row is one computation on one line (the fraction line at 32 px is 72.7 px high, as high as the big value) that ends in the big value, centred on it */
+.dc-big{align-items:center}
+.dc-line span[data-formula]{white-space:nowrap}
+.dc-track{position:absolute;left:30px;right:30px;top:308px;height:22px;box-sizing:border-box;border:3px solid var(--ink-soft);border-radius:6px}   /* WP-93 (D-178): 290 before; the words of NDCG stand under its row */
+/* WP-93 (the user's notes on page 13, 2026-11-01): the arrow that comes in first and points at the circles with a label (the colour of the label is its role's: no colour on an element that carries [data-role]); D-178: the words of DCG beside its name and of NDCG under its row */
+.dc-ga{position:absolute;display:flex;align-items:center;gap:12px}
+.dc-arrow{flex:none;color:var(--emph);stroke-width:5}
+.dc-galab{font:600 26px/40px var(--f-body);white-space:nowrap}
+.dc-expand{margin-left:14px;font:600 22px/1.2 var(--f-body);color:var(--ink-soft)}
+.dc-below{position:absolute;left:0;top:78px;white-space:nowrap;font:600 22px/26px var(--f-body);color:var(--ink-soft)}
+.dc-gauge{position:absolute;border-radius:3px;background:var(--key)}
+.dc-strip-lab{position:absolute;font:600 26px/1.2 var(--f-body);color:var(--ink)}
+.dc-cell{position:absolute;box-sizing:border-box;border-radius:8px;border:3px dashed var(--todo)}
+.dc-cell-on{border:6px double var(--key);background:color-mix(in srgb,var(--key) 28%,var(--ground))}
+.dc-res{position:absolute;display:flex;align-items:baseline;gap:14px;font:600 26px/1.2 var(--f-body);color:var(--ink-soft)}
+.dc-res b{font:700 48px/1 var(--f-title);color:var(--ink);font-variant-numeric:tabular-nums}
+.dc-res-nd{margin-left:26px}
+.dc-w{position:absolute}
+.dc-wbar{position:absolute;display:block;border-radius:3px}
+.dc-wbar-flat{background:var(--ink-soft)}
+.dc-wbar-ndcg{background:var(--key)}
+.dc-wlab{position:absolute;font:600 26px/1.2 var(--f-body);color:var(--ink)}
+.dc-cut{position:absolute;width:0;border-left:4px dashed var(--ink-soft)}
+.dc-cut b{position:absolute;left:8px;bottom:-34px;font:700 26px/1 var(--f-body);color:var(--ink);white-space:nowrap}
+
+/* ---------- table-highlight, mode timeline (widgets/table-timeline.js) ----------
+   training: blue solid ring and a round mark; test: gold double ring and a square mark; the model that learns from the future: a red dashed outline; the newest interactions: a purple dotted outline; a taste that changed: a green diamond instead of the grey dot. */
+.tl-grid{position:absolute;left:0;top:0}
+.tl-step{position:absolute;box-sizing:border-box;display:block;border:2px dashed var(--todo);border-radius:8px}
+.tl-user{position:absolute;color:var(--ink-soft)}
+.tl-axis{position:absolute;border-radius:2px;background:var(--ink-soft)}
+.tl-arrow{position:absolute;width:18px;height:20px;background:var(--ink-soft);clip-path:polygon(0 0,100% 50%,0 100%)}
+.tl-time{position:absolute;font:600 24px/1.2 var(--f-body);color:var(--ink-soft)}
+.tl-dot{position:absolute;display:block;border-radius:50%;background:var(--ink-soft)}
+.tl-ro{position:absolute;display:block;box-sizing:border-box;border-radius:50%}
+.tl-ro.tl-T{border:4px solid var(--emph)}
+.tl-ro.tl-X{border:6px double var(--key)}
+.tl-mk{position:absolute;right:-8px;top:-8px;width:18px;height:18px;box-sizing:border-box;border:3px solid var(--ground)}
+.tl-T .tl-mk{border-radius:50%;background:var(--emph)}
+.tl-X .tl-mk{border-radius:3px;background:var(--key)}
+.tl-leak{position:absolute;display:block;border-radius:50%;outline:4px dashed var(--neg);outline-offset:3px}
+.tl-diamond{position:absolute;display:block;background:var(--pos);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+.tl-cut{position:absolute;box-sizing:border-box;border-left:4px dashed var(--ink)}
+.tl-cut-label{position:absolute;font:700 30px/1 var(--f-title);color:var(--ink)}
+.tl-bracket{position:absolute;box-sizing:border-box;border:3px solid var(--ink-soft);border-bottom:0;border-radius:10px 10px 0 0;text-align:center;font:600 24px/26px var(--f-body);color:var(--ink)}
+/* WP-93 (D-162): the legend of the two rings under the grid: the same dot, ring and mark as in the grid, the word in the ring's colour */
+.tl-lgd{position:absolute}
+.tl-lg-dot{width:28px;height:28px}
+.tl-lg-ring{width:36px;height:36px}
+.tl-lg-word{position:absolute;white-space:nowrap;font:700 26px/32px var(--f-body)}
+.tl-lg-T{color:var(--emph)}
+.tl-lg-X{color:var(--key)}
+.tl-caption{position:absolute;font:600 32px/1.3 var(--f-body);color:var(--ink)}
+.tl-caption>div+div{margin-top:10px;font-weight:400;color:var(--ink-soft)}
+.tl-bad>div+div{font-weight:600;color:var(--neg)}
+.tl-board{position:absolute;box-sizing:border-box;border-radius:20px;border:3px solid var(--ink-soft);background:color-mix(in srgb,var(--ink) 5%,var(--ground))}
+.tl-board-title{position:absolute;left:20px;top:16px;font:700 30px/1.1 var(--f-title);color:var(--ink)}
+.tl-bar-label{position:absolute;font:600 24px/30px var(--f-body);color:var(--ink-soft)}
+.tl-bar{position:absolute;box-sizing:border-box;border-radius:4px}
+.tl-bar-a{background:var(--emph)}
+.tl-bar-b{border:3px dashed var(--term);background:color-mix(in srgb,var(--term) 30%,var(--ground))}
+.tl-bar-val{position:absolute;text-align:right;font:700 28px/30px var(--f-body);color:var(--ink);font-variant-numeric:tabular-nums}
+.tl-winner{position:absolute;font:700 32px/1.2 var(--f-title);color:var(--ink)}
+.tl-tag{position:absolute;box-sizing:border-box;padding:4px 14px;border:3px dashed var(--ink-soft);border-radius:999px;font:600 22px/1.2 var(--f-body);color:var(--ink-soft)}
+.tl-tag-off{display:none}
+
+/* ---------- pipeline, mode flow (widgets/pipeline-flow.js) ----------
+   group A: blue, solid frame; group B: purple, dashed frame (and the label of the group). The qualifying data: gold; quiz: blue solid; test: gold double frame; probe: purple dashed; the hidden test: a gold double frame and a lock. */
+/* WP-93 (D-180, the user's review of 2026-11-01, pages 17 and 18): the roles of the Netflix Prize follow page 16: training BLUE (solid ring), the probe PURPLE (it is the teams' local validation set: dashed ring and a diamond), the quiz AMBER (a dotted ring) and the test GOLD (a double ring, hatched cells).
+   The quiz amber is made of tokens only, 60 % gold over 40 % red, so it follows both themes: 5.39 : 1 (light) and 8.32 : 1 (dark) on the ground; the shape cue is the dotted ring (D-068) */
+/* WP-93 (D-179 (6)): page 19 (chart-finish, root `.fn-root`) wears the same roles on the heads of its card, so the token is defined once for both roots */
+.fl-root,.fn-root{--fl-quiz:color-mix(in srgb,var(--key) 60%,var(--neg) 40%)}
+.fl-crowd,.fl-gs{position:absolute;left:0;top:0}
+.fl-user{position:absolute;color:var(--ink-soft)}
+.fl-user.fl-a{color:var(--emph)}
+.fl-user.fl-b{color:var(--term)}
+.fl-cap{position:absolute;font:600 26px/1.25 var(--f-body);color:var(--ink-soft)}
+.fl-cap-r{text-align:right}
+/* WP-93: a caption that names a defined term takes the term colour (purple; D-009); roles.css comes first, so `.fl-cap`'s own colour must be overridden here */
+.fl-cap-term{color:var(--term)}
+.fl-cap-t{color:var(--emph)}
+/* WP-93 (D-180): the training part of the data (press 2 and 3): a blue outline and a soft blue fill (8 %), open on the right where the qualifying set begins, so the emphasis stays on the right */
+.fl-train{position:absolute;box-sizing:border-box;border-radius:12px 0 0 12px;border:4px solid var(--emph);border-right:0;background:color-mix(in srgb,var(--emph) 8%,var(--ground))}
+.fl-panel{position:absolute;box-sizing:border-box;border-radius:20px;background:color-mix(in srgb,var(--ink) 5%,var(--ground))}
+.fl-panel.fl-a{border:4px solid var(--emph)}
+.fl-panel.fl-b{border:4px dashed var(--term)}
+.fl-panel-title{position:absolute;left:24px;top:14px;font:700 32px/1.1 var(--f-title);color:var(--ink)}
+.fl-algo{position:absolute;font:600 28px/1.2 var(--f-body);color:var(--ink)}
+.fl-period{position:absolute;border-radius:5px;background:var(--ink-soft)}
+.fl-bar{position:absolute;box-sizing:border-box;border-radius:4px}
+.fl-bar.fl-a{background:var(--emph)}
+.fl-bar.fl-b{border:3px dashed var(--term);background:color-mix(in srgb,var(--term) 30%,var(--ground))}
+.fl-val{position:absolute;font:700 32px/36px var(--f-body);color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.fl-whisker{position:absolute;box-sizing:border-box;border-left:3px solid var(--ink);border-right:3px solid var(--ink)}
+.fl-whisker::after{content:"";position:absolute;left:0;right:0;top:50%;border-top:3px solid var(--ink)}
+/* WP-93 (D-093: the user chose alternative A, "a hatch behind", 2026-11-01): the overlap band of step 4 is a layer UNDER the bars, the values and the whiskers (z-index 0 against 1) and has no frame: its ends ARE the whiskers' end caps, and a dotted red frame
+   drawn on top used to cover them (the cap and the red dots were one 3 px line). A hatch is the non-colour cue (a pattern and a colour, D-068); the stripe is the negative colour mixed 75 % with the ground (the prototype had 70 %, which gave 2.96 : 1
+   against the panel in the light theme): 3.23 : 1 (light) and 3.50 : 1 (dark) against the panel the band lies on, the whisker's ink over it 3.81 : 1 and 3.52 : 1 (graphics need 3 : 1; config/themes tokens, color-mix in srgb) */
+.fl-overlap{position:absolute;box-sizing:border-box;z-index:0;border-radius:6px;background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--neg) 75%,var(--ground)) 0 3px,color-mix(in srgb,var(--neg) 14%,var(--ground)) 3px 9px)}
+.fl-panel .fl-bar,.fl-panel .fl-val,.fl-panel .fl-whisker{z-index:1}
+.fl-tag{position:absolute;box-sizing:border-box;padding:4px 14px;border:3px dashed var(--ink-soft);border-radius:999px;font:600 22px/1.2 var(--f-body);color:var(--ink-soft);text-align:center}
+.fl-same{position:absolute;text-align:center;font:600 28px/1.2 var(--f-body);color:var(--ink-soft)}
+.fl-doubt{position:absolute;text-align:center;font:600 28px/1.2 var(--f-body)}
+.fl-empty{position:absolute;box-sizing:border-box;border:3px dashed var(--todo);border-radius:12px}
+.fl-axis{position:absolute;border-radius:2px;background:var(--ink-soft)}
+.fl-data{position:absolute;box-sizing:border-box;border-radius:12px;border:3px solid var(--ink-soft);background:color-mix(in srgb,var(--ink) 14%,var(--ground))}
+.fl-stat{position:absolute;display:flex;flex-direction:column;align-items:flex-start;gap:2px;font:600 26px/1.2 var(--f-body);color:var(--ink-soft)}
+.fl-stat b{font:700 38px/1 var(--f-title);color:var(--ink)}
+.fl-qual{position:absolute;box-sizing:border-box;border-radius:0 12px 12px 0;border:4px solid var(--key);background:color-mix(in srgb,var(--key) 24%,var(--ground))}
+/* WP-93 (D-162): the qualifying set is dealt AT RANDOM into two halves of the same size: small cells, a quiz cell solid blue, a test cell hatched gold (a pattern and a colour); the legend chips, the probe's leader and label, and the leaders and coloured labels of the three small shares (a colour, a position and a line, never colour alone) */
+.fl-qc{position:absolute;box-sizing:border-box;width:19px;height:19px;border-radius:4px}
+.fl-qc-q{border:3px dotted var(--fl-quiz);background:color-mix(in srgb,var(--fl-quiz) 60%,var(--ground))}
+.fl-qc-t{border:2px solid var(--key);background:repeating-linear-gradient(135deg,var(--key) 0 3px,color-mix(in srgb,var(--key) 22%,var(--ground)) 3px 6px)}
+.fl-lg{position:absolute;display:flex;align-items:center;gap:10px;white-space:nowrap;font:700 26px/1 var(--f-body);color:var(--ink)}
+.fl-lg .fl-qc{position:static;flex:none}
+.fl-pl{position:absolute;background:var(--term)}
+.fl-cap-p{color:var(--term)}
+.fl-ld{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1 2}
+.fl-ld-p{stroke:var(--term)}
+.fl-ld-q{stroke:var(--fl-quiz)}
+.fl-ld-t{stroke:var(--emph)}
+.fl-ld-s{stroke:var(--key)}
+.fl-share-label.fl-sl-p,.fl-share-label.fl-sl-p b{color:var(--term)}
+.fl-share-label.fl-sl-q,.fl-share-label.fl-sl-q b{color:var(--fl-quiz)}
+.fl-share-label.fl-sl-t,.fl-share-label.fl-sl-t b{color:var(--emph)}
+.fl-share-label.fl-sl-s,.fl-share-label.fl-sl-s b{color:var(--key)}
+.fl-probe{position:absolute;box-sizing:border-box;border-radius:6px;border:4px dashed var(--term);background:color-mix(in srgb,var(--term) 24%,var(--ground))}
+.fl-probe::after{content:"";position:absolute;right:-12px;top:-12px;width:22px;height:22px;box-sizing:border-box;border:3px solid var(--ground);background:var(--term);transform:rotate(45deg) scale(.85)}
+.fl-sb{position:absolute}
+.fl-share{position:absolute;box-sizing:border-box}
+.fl-sh-t{border:3px solid var(--emph);background:color-mix(in srgb,var(--emph) 12%,var(--ground))}
+.fl-sh-p{background:var(--term)}
+.fl-sh-q{border:3px dotted var(--fl-quiz);background:color-mix(in srgb,var(--fl-quiz) 60%,var(--ground))}
+.fl-sh-s{background:var(--key)}
+.fl-share-label{position:absolute;font:600 24px/1.2 var(--f-body);color:var(--ink-soft)}
+.fl-share-label b{display:block;font:700 34px/1.1 var(--f-title);color:var(--ink);font-variant-numeric:tabular-nums}
+.fl-team{position:absolute;display:flex;flex-direction:column;align-items:center;gap:8px;font:600 26px/1.2 var(--f-body);color:var(--ink)}
+.fl-team .pg{color:var(--ink-soft)}
+.fl-scorer{position:absolute;box-sizing:border-box;border-radius:20px;border:4px solid var(--ink-soft);background:color-mix(in srgb,var(--ink) 5%,var(--ground))}
+.fl-scorer-title{position:absolute;text-align:center;font:700 28px/32px var(--f-title);color:var(--ink)}
+.fl-half{position:absolute;box-sizing:border-box;display:grid;place-items:center;border-radius:12px;font:700 36px/1 var(--f-title);color:var(--ink)}
+.fl-half-q{border:4px dotted var(--fl-quiz);background:color-mix(in srgb,var(--fl-quiz) 10%,var(--ground))}
+.fl-half-t{border:3px dashed var(--key);background:color-mix(in srgb,var(--key) 10%,var(--ground))}
+.fl-lit{position:absolute;box-sizing:border-box;border-radius:16px;border:6px dotted var(--fl-quiz)}
+.fl-lit-t{border:6px double var(--key)}
+.fl-file{position:absolute;display:grid;place-items:center;color:var(--ink-soft)}
+.fl-arrow{position:absolute;background:var(--ink-soft);clip-path:polygon(0 38%,88% 38%,88% 0,100% 50%,88% 100%,88% 62%,0 62%)}
+.fl-board{position:absolute;box-sizing:border-box;border-radius:20px;border:4px dotted var(--fl-quiz);background:color-mix(in srgb,var(--ink) 5%,var(--ground))}
+.fl-board-title{position:absolute;left:18px;top:12px;font:700 28px/1.1 var(--f-title);color:var(--ink)}
+.fl-row-name{position:absolute;font:600 24px/34px var(--f-body);color:var(--ink-soft)}
+.fl-rowbar{position:absolute;border-radius:4px;background:var(--fl-quiz)}
+.fl-hidden{position:absolute;box-sizing:border-box;display:grid;place-items:center;border-radius:16px;border:4px double var(--key);background:color-mix(in srgb,var(--key) 24%,var(--ground));color:var(--ink)}
+.fl-loop{position:absolute;box-sizing:border-box;border:5px dashed var(--ink-soft);border-top:0;border-radius:0 0 40px 40px}
+.fl-cross{position:absolute;fill:none;stroke:var(--neg);stroke-width:5;stroke-linecap:round}
+
+/* ---------- compare, mode ranked (widgets/compare-ranked.js) ----------
+   a relevant item is a gold star; the user's window a blue frame; the discordant lines a red dashed line; algorithm A a blue mark, B a purple mark (each with its name written beside it). */
+.rk-grp{position:absolute;left:0;top:0}
+.rk-cell{position:absolute;box-sizing:border-box;display:grid;place-items:center;border-radius:14px;border:3px dashed var(--todo);font:700 36px/1 var(--f-title);color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.rk-star{position:absolute;color:var(--key)}
+.rk-window{position:absolute;box-sizing:border-box;border-radius:20px;border:5px solid var(--emph)}
+.rk-cap{position:absolute;font:600 26px/1.25 var(--f-body);color:var(--ink-soft)}
+.rk-center{text-align:center}
+.rk-cut{position:absolute;box-sizing:border-box;border-left:4px dashed var(--ink)}
+.rk-cutlab{position:absolute;font:700 28px/1 var(--f-body);color:var(--ink)}
+.rk-tile{position:absolute;box-sizing:border-box;display:flex;align-items:baseline;justify-content:space-between;padding:12px 18px;border-radius:16px;border:3px solid var(--ink-soft);background:color-mix(in srgb,var(--ink) 5%,var(--ground));font:600 28px/1.2 var(--f-body);color:var(--ink-soft)}
+.rk-tile b{font:700 52px/1 var(--f-title);color:var(--ink);font-variant-numeric:tabular-nums}
+/* WP-93 (D-174): a measure of press 2 is a COMPUTATION (symbolic fraction = the numbers = the value, one row, fractions two lines high), in a tile of its own; the definition of TP, FP and FN stands beside the grid. UNMEASURED: the Chrome run decides the fit */
+.rk-eqtile{align-items:center;justify-content:flex-start;padding:2px 10px}   /* WP-93 (page 12): 10 px, it was 20, in a tile of 440 px (it was 560): P@20 is 398.3 px of the 414 inside, and the panel of TP, FP and FN gets the room of one line each */
+.rk-eq{font:600 30px/1.2 var(--f-body);color:var(--ink);white-space:nowrap;font-variant-numeric:tabular-nums}
+/* WP-93 (the user's page 12 notes, 2026-11-01): TP, FP and FN stand ONE PER LINE ("the text wraps in unrelated places"): a row never wraps, a line breaks only between the three; the abbreviation has a column of its own, FN is red like its marks */
+.rk-def{position:absolute;display:flex;flex-direction:column;justify-content:center;gap:10px;font:600 24px/1.3 var(--f-body);color:var(--ink-soft)}
+.rk-def-head{display:flex;align-items:baseline;gap:36px;white-space:nowrap;font:600 22px/1.2 var(--f-body);color:var(--ink-soft)}   /* WP-93 (D-178): P@k and R@k spelled out, one row above TP, FP and FN */
+.rk-def-head b{font-weight:700;color:var(--ink)}
+.rk-def-row{display:flex;align-items:baseline;white-space:nowrap}
+.rk-def-abbr{flex:none;width:40px;font-weight:700;color:var(--ink)}
+.rk-def-neg{color:var(--neg)}
+/* the key of the star: the stars' own emblem, smaller, in their colour, and the words beside it */
+.rk-starkey{position:absolute;display:flex;align-items:center;gap:12px;font:600 26px/1.2 var(--f-body);color:var(--ink-soft)}
+.rk-keystar{flex:none;color:var(--key)}
+.rk-far{position:absolute}
+.rk-dots{position:absolute;left:0;top:30px;width:60px;border-top:6px dotted var(--ink-soft)}
+.rk-cell-far{left:70px;top:0;width:66px;height:66px;border:3px solid var(--key);color:var(--ink)}
+.rk-farlab{position:absolute;text-align:right;white-space:nowrap;font:600 26px/1.25 var(--f-body);color:var(--ink-soft)}   /* the sixth item's label, left of its dots */
+.rk-farhl{position:absolute;box-sizing:border-box;border-radius:14px;border:3px solid var(--neg)}   /* press 3: a red border laid exactly over the cell's gold one (same box, same radius): the item that is not found; no fill, the rank stays readable */
+/* a false negative, marked where it is: a red ring (an inset line, so that it moves nothing) round the star, and a tag FN@cut above it (a second mark of the same item has the tag only) */
+.rk-fn{position:absolute;box-sizing:border-box;border-radius:50%;box-shadow:inset 0 0 0 3px var(--neg)}
+.rk-fn-bare{box-shadow:none}
+.rk-fntag{position:absolute;box-sizing:border-box;display:grid;place-items:center;border-radius:8px;border:2px solid var(--neg);background:color-mix(in srgb,var(--neg) 12%,var(--ground));font:700 22px/1 var(--f-body);color:var(--neg);white-space:nowrap}
+.rk-note{position:absolute;font:600 30px/1.25 var(--f-body)}
+.rk-q{position:absolute;font:700 34px/44px var(--f-title);color:var(--ink)}
+.rk-th{position:absolute}
+.rk-thc{position:absolute;font:600 22px/1.2 var(--f-body);color:var(--ink-soft)}
+.rk-thc[data-formula]{white-space:nowrap}
+.rk-row{position:absolute;box-sizing:border-box}
+.rk-row-user{position:absolute;font:600 26px/64px var(--f-body);color:var(--ink)}
+.rk-rankchip{position:absolute;box-sizing:border-box;display:grid;place-items:center;height:40px;border-radius:10px;border:3px solid var(--key);background:color-mix(in srgb,var(--key) 18%,var(--ground));font:700 28px/1 var(--f-title);color:var(--ink);font-variant-numeric:tabular-nums}
+.rk-mark{position:absolute;fill:none;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.rk-hit{stroke:var(--pos)}
+.rk-miss{stroke:var(--neg)}
+.rk-recip{position:absolute;display:flex;align-items:center;height:64px;font:600 26px/1.2 var(--f-body);color:var(--ink);font-variant-numeric:tabular-nums}   /* WP-93 (D-174): the weight 1 / rank is a fraction (two lines high), centred in the 64 px row */
+.rk-wbar{position:absolute;height:22px;border-radius:5px;background:var(--emph)}
+.rk-row-hit{border-bottom:2px solid color-mix(in srgb,var(--ink-soft) 40%,var(--ground))}
+.rk-row-miss{border-bottom:2px dashed var(--ink-soft)}
+.rk-hrtile{position:absolute;box-sizing:border-box;padding:14px 22px;border-radius:18px;border:3px solid var(--ink-soft);background:color-mix(in srgb,var(--ink) 5%,var(--ground))}
+.rk-hr-name{font:600 24px/1.2 var(--f-body);color:var(--ink-soft)}
+.rk-hr-name b{font:700 36px/1.1 var(--f-title);color:var(--ink)}
+.rk-hr-how{margin-top:4px;font:400 24px/1.25 var(--f-body);color:var(--ink-soft)}
+.rk-hr-calc{margin-top:10px;font:700 30px/1.2 var(--f-body);color:var(--ink);white-space:nowrap;font-variant-numeric:tabular-nums}   /* WP-93 (D-174): a computation of one row in the BODY font (the title font has no Σ, and the fractions are two lines high) */
+.rk-chip{position:absolute;box-sizing:border-box;display:grid;place-items:center;border-radius:12px;border:4px solid var(--ink-soft);background:color-mix(in srgb,var(--ink) 8%,var(--ground));font:700 34px/1 var(--f-title);color:var(--ink)}
+.rk-line{position:absolute;height:4px;border-radius:2px;background:var(--ink-soft)}
+.rk-line-hl{height:0;border-top:6px dashed var(--neg);background:none}
+.rk-d{position:absolute;font:600 26px/1.2 var(--f-body);color:var(--ink);font-variant-numeric:tabular-nums}
+.rk-panel{position:absolute;box-sizing:border-box;border-radius:20px;padding:18px 22px;border:3px solid var(--ink-soft);background:color-mix(in srgb,var(--ink) 5%,var(--ground))}
+.rk-panel-title{margin-bottom:12px;font:700 30px/1.15 var(--f-title);color:var(--ink)}
+.rk-panel-line{font:600 28px/1.35 var(--f-body);color:var(--ink);font-variant-numeric:tabular-nums}
+.rk-panel-line[data-formula]{white-space:nowrap}   /* WP-93 (D-174): a drawn computation never wraps (a fraction is two lines high and one line wide) */
+.rk-tie{position:absolute;box-sizing:border-box;border:4px solid var(--term);border-right:0;border-radius:8px 0 0 8px}
+/* WP-93 (the user's notes on page 14, 2026-11-01): a tied item's line is purple (the colour of the term, like the bracket) where it was red: the pair is neither concordant nor discordant; the word "tied" beside the bracket (a role, no colour here);
+   the panel's reason (text-wrap: balance keeps its two lines even) and the captions of the two computations */
+.rk-line-tie{height:0;border-top:6px dashed var(--term);background:none}
+.rk-tielab{position:absolute;text-align:right;font:600 26px/1.25 var(--f-body)}
+/* WP-93 (tau-b, the lead's correction of 2026-11-01): the tie count of each order under its column ("tied pairs: T_true = 1", "tied pairs: T_predicted = 0"): where the two symbols of the formula are explained; one row, soft ink, no role */
+.rk-tiecount{position:absolute;text-align:center;white-space:nowrap;font:600 22px/1.35 var(--f-body);color:var(--ink-soft)}
+.rk-panel-note{margin:6px 0 10px;font:600 22px/1.35 var(--f-body);color:var(--ink-soft);text-wrap:balance}
+.rk-panel-cap{margin-top:8px;font:600 22px/1.35 var(--f-body);color:var(--ink-soft)}
+.rk-tag{position:absolute;box-sizing:border-box;padding:4px 14px;border:3px dashed var(--ink-soft);border-radius:999px;font:600 22px/1.2 var(--f-body);color:var(--ink-soft);text-align:center}
+.rk-rule{position:absolute;font:700 30px/1.25 var(--f-title);color:var(--ink)}
+/* WP-93 (D-180): the key of the numbers in the circles, the last item of the legend row (the row is a flex row; the auto margin pushes the key to its right edge, 30 px at least from the item before it) */
+.rk-legend .rk-key{margin-left:auto;padding-left:30px}
+/* the view `sampled` (Rendle 2019): three metric panels, a hollow dashed bar for the full ranking and a solid bar for the sample, the rank of each algorithm in a numbered circle (1 filled, the others outlined), the order as text */
+.rk-legend{position:absolute;display:flex;align-items:center;gap:14px;font:600 24px/1.2 var(--f-body);color:var(--ink-soft);white-space:nowrap}
+.rk-legend i{flex:none;display:block;width:44px;height:20px;box-sizing:border-box;border-radius:5px}
+.rk-legend span+i{margin-left:30px}
+.rk-sw-full{border:3px dashed var(--ink-soft);background:var(--ground)}
+.rk-sw-samp{background:var(--emph)}
+.rk-pm{position:absolute;box-sizing:border-box;border-radius:20px;border:3px solid var(--ink-soft);background:color-mix(in srgb,var(--ink) 4%,var(--ground))}
+.rk-pm-title{position:absolute;text-align:center;font:700 30px/40px var(--f-title);color:var(--ink)}
+.rk-pm .rk-chip{font-size:28px}
+.rk-sbar{position:absolute;box-sizing:border-box;border-radius:6px}
+.rk-bar-full{border:3px dashed var(--ink-soft);background:var(--ground)}
+.rk-bar-samp{background:var(--emph)}
+.rk-sval{position:absolute;text-align:right;font:600 24px/30px var(--f-body);color:var(--ink);font-variant-numeric:tabular-nums}
+/* WP-93 (D-180, the user on page 20): the rank circles are identical (the same ring, the same ground, no blue filled 1); ring and digit FADE with the rank, 100 / 84 / 68 % ink (text contrast 13.5 / 8.4 / 5.1 : 1 on the light ground, 13.8 / 10.0 / 7.0 : 1 on the dark one);
+   the UPPER circle of an algorithm, the full ranking, is dashed like its bar (.rk-bar-full) and the legend swatch (.rk-sw-full): the dashes tell the two circles apart */
+.rk-rank{position:absolute;box-sizing:border-box;display:grid;place-items:center;border-radius:50%;border:3px solid var(--ink);background:var(--ground);font:700 20px/1 var(--f-title);color:var(--ink)}
+.rk-rank-1{border-color:var(--ink);color:var(--ink)}
+.rk-rank-2{border-color:color-mix(in srgb,var(--ink) 84%,var(--ground));color:color-mix(in srgb,var(--ink) 84%,var(--ground))}
+.rk-rank-3{border-color:color-mix(in srgb,var(--ink) 68%,var(--ground));color:color-mix(in srgb,var(--ink) 68%,var(--ground))}
+.rk-rank-up{border-style:dashed}
+.rk-order{position:absolute;font:700 26px/32px var(--f-body);color:var(--ink);white-space:nowrap}
+.rk-order-name{display:inline-block;width:182px;vertical-align:top;font-weight:600;color:var(--ink-soft)}
+.rk-order-val{display:inline-block;vertical-align:top}
+.rk-fall{position:absolute;box-sizing:border-box;border-radius:12px;border:5px double var(--neg)}
+/* WP-74: table-highlight mode `catalog` (page 5 coverage): two toy catalogues with lit films and a gauge each, then the users who get nothing */
+.ca-panel{position:absolute;box-sizing:border-box;border-radius:20px;border:3px solid var(--ink-soft);background:color-mix(in srgb,var(--ink) 4%,var(--ground))}
+.ca-title{position:absolute;display:flex;align-items:center;justify-content:center;font:700 30px/1.1 var(--f-title);color:var(--ink)}
+.ca-film{position:absolute;box-sizing:border-box;display:grid;place-items:center;border-radius:12px;border:2px solid color-mix(in srgb,var(--ink-soft) 50%,var(--ground));background:color-mix(in srgb,var(--ink) 5%,var(--ground));color:var(--ink-soft)}
+.ca-film .pg-emblem{opacity:.55}
+.ca-lit{position:absolute;box-sizing:border-box;border-radius:15px;border:5px solid var(--emph);background:color-mix(in srgb,var(--emph) 16%,transparent)}
+.ca-badge{position:absolute;right:-12px;top:-12px;display:grid;place-items:center;width:32px;height:32px;box-sizing:border-box;border-radius:50%;background:var(--emph);border:3px solid var(--ground)}
+.ca-badge path{fill:none;stroke:var(--ground);stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.ca-badge svg{width:20px;height:20px}
+.ca-track{position:absolute;box-sizing:border-box;border-radius:6px;border:2px solid var(--ink-soft);background:var(--ground)}
+.ca-gauge{position:absolute;border-radius:6px;background:var(--emph)}
+.ca-read{position:absolute;text-align:center}
+.ca-read-title{font:600 26px/1.25 var(--f-body);color:var(--ink-soft)}
+.ca-read-value{font:700 38px/1.2 var(--f-title);color:var(--ink);font-variant-numeric:tabular-nums}
+.ca-nc{position:absolute;box-sizing:border-box;border-radius:8px;border:3px dashed var(--todo)}
+.ca-pc{position:absolute;box-sizing:border-box;display:grid;place-items:center;border-radius:8px;border:3px solid var(--ink-soft);background:color-mix(in srgb,var(--pos) 16%,var(--ground))}
+.ca-pc path{fill:none;stroke:var(--pos);stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.ca-pc svg{width:24px;height:24px}
+.ca-cap{position:absolute;font:600 22px/1.25 var(--f-body);color:var(--ink-soft)}
+.ca-legend{position:absolute;display:flex;align-items:center;gap:12px;white-space:nowrap;font:600 22px/1.2 var(--f-body);color:var(--ink-soft)}
+.ca-legend i{flex:none;display:block;width:28px;height:28px;box-sizing:border-box;border-radius:6px}
+.ca-legend span+i{margin-left:24px}
+.ca-sw-yes{border:3px solid var(--ink-soft);background:color-mix(in srgb,var(--pos) 16%,var(--ground))}
+.ca-sw-no{border:3px dashed var(--todo)}
+.ca-note{position:absolute;text-align:center;font:600 22px/1.2 var(--f-body);color:var(--ink-soft)}
+/* WP-74: compare mode `why` (page why-evaluate, Herlocker's market example): the shopper's basket, list A (all hits, nothing new), list B (an untried product), the two questions, the gold sentence */
+.wy-hist,.wy-list,.wy-q{position:absolute;box-sizing:border-box;border-radius:20px;border:3px solid var(--ink-soft);background:color-mix(in srgb,var(--ink) 4%,var(--ground))}
+.wy-hist>.wy-user,.wy-hist>.pg-item{position:absolute}
+.wy-user{color:var(--ink-soft)}
+.wy-week{position:absolute;font:600 24px/1.25 var(--f-body);color:var(--ink)}
+.wy-iname{position:absolute;text-align:center;font:600 20px/1.2 var(--f-body);color:var(--ink-soft)}
+.wy-hist .pg-item{color:var(--ink-soft)}
+.wy-title{position:absolute;font:700 30px/44px var(--f-title);color:var(--ink)}
+.wy-card{position:absolute;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border-radius:16px;border:3px solid var(--ink-soft);background:var(--ground);color:var(--ink-soft)}
+.wy-fresh{border:4px dashed var(--ink-soft)}
+.wy-cname{font:600 24px/1 var(--f-body);color:var(--ink)}
+.wy-badge{position:absolute;display:grid;place-items:center;width:34px;height:34px;box-sizing:border-box;border-radius:50%;border:3px solid var(--ground)}
+.wy-tick{background:var(--pos)}
+.wy-tick path{fill:none;stroke:var(--ground);stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.wy-tick svg{width:22px;height:22px}
+.wy-qmark{background:var(--term);color:var(--ground);font:700 22px/1 var(--f-title)}
+.wy-note{position:absolute;font:600 24px/1.25 var(--f-body);color:var(--ink-soft)}
+.wy-q{padding:12px 24px}
+.wy-q-title{font:700 30px/1.2 var(--f-title);color:var(--ink)}
+.wy-q-row{display:flex;align-items:center;gap:16px;margin-top:22px}
+.wy-chip{flex:1;box-sizing:border-box;display:grid;place-items:center;height:60px;border-radius:14px;border:3px solid var(--ink-soft);background:var(--ground);font:600 26px/1.1 var(--f-body);color:var(--ink)}
+.wy-arrow{flex:none}
+.wy-arrow path{fill:none;stroke:var(--ink-soft);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.wy-gold{position:absolute;display:grid;place-items:center;text-align:center;font:700 42px/1.15 var(--f-title)}
+/* WP-74: compare mode `novelty` (page novelty, Herlocker's director example): three cards (known, new but expected, serendipity) with their yes/no attributes, then the nested sets and the two ways of measuring */
+.nv-user{position:absolute;color:var(--ink-soft)}
+/* WP-93 (D-173 B + B1, the user's choice on review board 2): the posters of the films carry their name on a strip along the foot and, for the director's films, a tiny director's chair in the top right corner; the emblem (the genre) is untouched and is centred in
+   what the strip leaves. Tokens only. The strip is the ground colour on the ink (13.48 : 1 light, 13.82 : 1 dark), the chair the symbol's own colour (6.79 : 1, 6.94 : 1). A card's poster is 96 x 120 px (strip 28, text 20), the small ones 56 x 72 px (strip 18, text 14). */
+.nv-film{overflow:hidden}
+.nv-film-lg{padding-bottom:28px}
+.nv-film-sm{padding-bottom:18px}
+.nv-chair{position:absolute;color:var(--ink-soft)}
+.nv-film-lg .nv-chair{top:5px;right:5px}
+.nv-film-sm .nv-chair{top:3px;right:3px}
+.nv-plate{position:absolute;left:0;right:0;bottom:0;display:grid;place-items:center;box-sizing:border-box;background:var(--ink);color:var(--ground);font-family:var(--f-body);font-weight:700;line-height:1;white-space:nowrap;letter-spacing:.02em}
+.nv-film-lg .nv-plate{height:28px;font-size:20px}
+.nv-film-sm .nv-plate{height:18px;font-size:14px}
+.nv-cap{position:absolute;font:600 24px/1.25 var(--f-body);color:var(--ink)}
+.nv-card,.nv-box{position:absolute;box-sizing:border-box;border-radius:20px;border:3px solid var(--ink-soft);background:color-mix(in srgb,var(--ink) 4%,var(--ground))}
+.nv-text{position:absolute;font:600 24px/1.25 var(--f-body);color:var(--ink)}
+.nv-attr{position:absolute;font:600 24px/34px var(--f-body);color:var(--ink-soft)}
+.nv-mark{position:absolute;fill:none;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.nv-yes{stroke:var(--pos)}
+.nv-no{stroke:var(--neg)}
+.nv-verdict{position:absolute;display:grid;place-items:center;box-sizing:border-box;border-radius:12px;font:700 28px/1 var(--f-title);color:var(--ink)}
+.nv-known .nv-verdict{border:3px solid var(--ink-soft);background:var(--ground)}
+.nv-novelty .nv-verdict{border:3px dashed var(--term);background:color-mix(in srgb,var(--term) 12%,var(--ground))}
+.nv-serendipity .nv-verdict{border:5px double var(--key);background:color-mix(in srgb,var(--key) 18%,var(--ground))}
+.nv-ring{position:absolute;box-sizing:border-box;border-radius:28px;border:6px double var(--key)}
+.nv-sets{position:absolute}
+.nv-big{position:absolute;left:0;top:0;width:152px;height:152px;box-sizing:border-box;border-radius:50%;border:4px solid var(--ink-soft);background:color-mix(in srgb,var(--ink) 5%,var(--ground))}
+.nv-big span{position:absolute;left:0;right:0;top:6px;text-align:center;font:700 22px/1 var(--f-body);color:var(--ink)}
+.nv-small{position:absolute;left:32px;top:34px;width:112px;height:112px;box-sizing:border-box;display:grid;place-items:center;border-radius:50%;border:5px double var(--key);background:color-mix(in srgb,var(--key) 18%,var(--ground))}
+.nv-small span{font:700 17px/1 var(--f-body);color:var(--ink)}
+.nv-box-title{position:absolute;left:24px;top:12px;font:700 28px/1.2 var(--f-title);color:var(--ink)}
+.nv-qs{position:absolute;left:24px;right:24px;top:70px;display:flex;gap:16px}
+.nv-q{flex:1;box-sizing:border-box;display:grid;place-items:center;height:56px;border-radius:14px;border:3px solid var(--ink-soft);background:var(--ground);font:600 26px/1.1 var(--f-body);color:var(--ink)}
+.nv-off{position:absolute;left:24px;right:24px;top:60px;font:600 24px/1.3 var(--f-body);color:var(--ink-soft)}
+.nv-gold{position:absolute;display:grid;place-items:center;text-align:center;font:700 36px/1.15 var(--f-title)}
+/* WP-93 (D-164): press 5 of `novelty`, novelty as surprise I = log2(u / k): the formula and its legend, a row per film (k, the substitution, a bar of I in bits, its value), the mean, the tag */
+.nv-sf,.nv-srow{position:absolute}
+.nv-sform{position:absolute;display:flex;align-items:center;font:700 32px/1.2 var(--f-body);color:var(--ink)}
+.nv-slegend{position:absolute;white-space:nowrap;font:600 24px/32px var(--f-body);color:var(--ink-soft)}
+.nv-stext{position:absolute;font:600 24px/1.25 var(--f-body);color:var(--ink)}
+.nv-sk{position:absolute;white-space:nowrap;font:700 30px/40px var(--f-body);color:var(--ink);font-variant-numeric:tabular-nums}
+.nv-ssub{position:absolute;display:flex;align-items:center;white-space:nowrap;font:600 26px/36px var(--f-body);color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.nv-sbar{position:absolute;box-sizing:border-box;border-radius:5px;background:var(--emph)}
+.nv-sval{position:absolute;white-space:nowrap;font:700 30px/40px var(--f-body);color:var(--ink);font-variant-numeric:tabular-nums}
+.nv-smean{position:absolute;box-sizing:border-box;display:flex;align-items:center;padding-top:10px;border-top:3px solid var(--ink-soft);white-space:nowrap;font:700 32px/44px var(--f-body);color:var(--ink);font-variant-numeric:tabular-nums}
+.nv-stag{position:absolute;box-sizing:border-box;display:grid;place-items:center;padding:0 18px;border:3px dashed var(--ink-soft);border-radius:999px;text-align:center;white-space:nowrap;font:600 22px/1.2 var(--f-body);color:var(--ink-soft)}
+/* WP-93 (D-164): press 6 of `novelty`, serendipity as a share: the list of films, the primitive recommender's films dimmed and tagged, a frame round the unexpected ones, a tick or a cross under them, the two lines and the big value */
+.nv-slab{position:absolute;white-space:nowrap;font:600 26px/36px var(--f-body);color:var(--ink-soft)}
+.nv-veil{position:absolute;border-radius:10px;background:color-mix(in srgb,var(--ground) 62%,transparent)}
+.nv-pm{position:absolute;box-sizing:border-box;display:grid;place-items:center;border:3px dashed var(--ink-soft);border-radius:999px;background:var(--ground);font:700 22px/1 var(--f-body);color:var(--ink-soft)}
+.nv-frame{position:absolute;box-sizing:border-box;border-radius:16px;border:5px solid var(--emph)}
+.nv-snote{position:absolute;white-space:nowrap;font:600 24px/34px var(--f-body);color:var(--ink-soft)}
+.nv-sline{position:absolute;white-space:nowrap;font:700 32px/44px var(--f-body);color:var(--ink);font-variant-numeric:tabular-nums}
+/* WP-93 (D-174): a line with a fraction in it (the share S) is as high as the fraction (72.7 px at 32 px) and its content is centred in the box */
+.nv-sfrac{display:flex;align-items:center}
+/* WP-74: chart-draw mode `finish` (page netflix-finish): the ladder of the Netflix Prize on the test set, the finalists' quiz against test card, six decimals and the rule (the dots, lines and labels reuse .cv-* and .ms-* of widgets.css) */
+.fn-cat{white-space:normal;text-align:center;font:600 26px/1.15 var(--f-body);color:var(--ink)}
+.fn-sub{display:block;font:400 20px/1.2 var(--f-body);color:var(--ink-soft)}
+.fn-card{position:absolute;box-sizing:border-box;padding:16px 22px;border-radius:20px;background:var(--ground);border:3px solid var(--ink-soft)}
+.fn-card-title{font:700 28px/1.2 var(--f-body);color:var(--ink)}
+.fn-table{display:grid;grid-template-columns:1fr 84px 84px;gap:6px 10px;align-items:center;margin-top:8px}
+.fn-th{white-space:normal;text-align:right;font:600 20px/1.25 var(--f-body);color:var(--ink-soft)}
+/* WP-93 (D-179 (6)): the heads of the card are the roles of pages 17 and 18: the quiz amber with a dotted underline (the dotted ring), the test gold, bold, with a double underline (the double ring); the cue is a shape as well as a colour (D-068).
+   WP-93 (D-183): the underline sits on the first word only (.fn-w); the rest of the head (.fn-rest, "(public)", "(decides)") is a line of its own in the same colour and has none */
+.fn-th-q{color:var(--fl-quiz)}
+.fn-th-t{color:var(--key);font-weight:700}
+.fn-th .fn-rest{display:block}
+.fn-th-q .fn-w{text-decoration-line:underline;text-decoration-style:dotted;text-decoration-thickness:3px;text-underline-offset:4px}
+/* the double underline: Chrome draws each of its two strokes as thick as the thickness and 1 px apart, so 3 px strokes spanned 4 to 11 px under the baseline and reached the tops of the second line (its ascenders start 10.7 px under the first baseline: seen at 5 times
+   in the visible tab); 2 px strokes at 3 px span 3 to 8 px: 2.7 px clear */
+.fn-th-t .fn-w{text-decoration-line:underline;text-decoration-style:double;text-decoration-thickness:2px;text-underline-offset:3px}
+/* WP-93 (D-182): the quiz value beside Cinematch (press 2) is the quiz amber too; no underline, the head of the card carries the shape cue. The selector is more specific than `.ms-quiz` of widgets.css, so the order of the sheets does not matter */
+.fn-root .fn-quiz{color:var(--fl-quiz)}
+.fn-tname{display:flex;align-items:center;gap:12px;white-space:nowrap;font:600 22px/1.2 var(--f-body);color:var(--ink)}
+.fn-num{text-align:right;font:400 24px/1.2 var(--f-body);color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.fn-best{font-weight:700;color:var(--ink)}
+.fn-foot{margin-top:10px;font:400 22px/1.25 var(--f-body);color:var(--ink-soft)}
+.fn-line{position:absolute;font:600 24px/1.25 var(--f-body);color:var(--ink)}
+.fn-gold{font:700 26px/1.25 var(--f-title)}
+/* WP-74: table-highlight mode `exposure` (page mnar): a toy rating matrix whose cells are rated, shown-not-rated or never shown; the histogram of what is rated; popular against long tail; three remedies */
+.ex-mat{position:absolute;left:0;top:0}
+.ex-user{position:absolute;color:var(--ink-soft)}
+.ex-empty{position:absolute;box-sizing:border-box;border:3px dashed var(--todo);border-radius:10px}
+.ex-ob{position:absolute;box-sizing:border-box;overflow:hidden;border-radius:10px;border:3px solid var(--ink-soft);background:var(--ground)}
+.ex-bar{position:absolute;left:10px;right:10px;bottom:7px;border-radius:4px;background:var(--emph)}
+.ex-nv{position:absolute;box-sizing:border-box;display:grid;place-items:center;border-radius:10px;border:3px dotted var(--ink-soft);background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--ink-soft) 28%,var(--ground)) 0 3px,var(--ground) 3px 9px);color:var(--ink-soft)}
+.ex-nv .pg-icon{position:static}
+.ex-sample{position:absolute}
+.ex-bk{position:absolute;box-sizing:border-box;border-bottom:4px solid var(--ink-soft);text-align:center;font:600 24px/1.1 var(--f-body);color:var(--ink)}
+.ex-bk span{position:absolute;left:0;right:0;top:2px}
+.ex-cn{position:absolute;border-radius:4px;background:var(--emph)}
+.ex-panel{position:absolute;box-sizing:border-box;padding:16px 24px;border-radius:20px;border:3px solid var(--ink-soft);background:color-mix(in srgb,var(--ink) 4%,var(--ground))}
+.ex-title{font:700 30px/1.2 var(--f-title);color:var(--ink)}
+.ex-hist{position:absolute;box-sizing:border-box;border-radius:5px 5px 0 0}
+.ex-hist-ob{background:var(--emph)}
+.ex-hist-all{border:3px dashed var(--ink-soft);background:var(--ground)}
+.ex-hx{position:absolute;text-align:center;font:600 24px/30px var(--f-body);color:var(--ink-soft)}
+.ex-legend{position:absolute;display:flex;align-items:center;gap:14px;white-space:nowrap;font:600 24px/1.2 var(--f-body);color:var(--ink-soft)}
+.ex-sw{flex:none;display:block;width:44px;height:20px;box-sizing:border-box;border-radius:5px}
+.ex-legend span+i{margin-left:30px}
+.ex-kind{position:absolute;display:flex;align-items:center;font:600 28px/1.2 var(--f-body);color:var(--ink)}
+.ex-err{position:absolute;box-sizing:border-box;border-radius:6px}
+.ex-err-pop{background:var(--emph)}
+.ex-err-tail{background:color-mix(in srgb,var(--neg) 30%,var(--ground));border:4px dashed var(--neg)}
+.ex-cap{position:absolute;font:600 24px/1.2 var(--f-body);color:var(--ink-soft)}
+.ex-tag{position:absolute;box-sizing:border-box;padding:4px 14px;border:3px dashed var(--ink-soft);border-radius:999px;font:600 22px/1.2 var(--f-body);color:var(--ink-soft);text-align:center}
+.ex-card{position:absolute;box-sizing:border-box;display:flex;align-items:center;gap:24px;padding:0 28px;border-radius:20px;border:3px solid var(--ink-soft);background:var(--ground)}
+.ex-glyph{flex:none;color:var(--ink-soft)}
+.ex-card-title{font:700 30px/1.15 var(--f-title);color:var(--ink)}
+.ex-card-how{margin-top:4px;font:400 26px/1.25 var(--f-body);color:var(--ink-soft)}
+/* WP-74: chart-draw mode `roc` (page roc): two ranked lists of ten with five relevant items and their ROC curves in the unit square, the oracle and the random diagonal, the shaded area under B's curve = AUC */
+.rc-lbl{position:absolute;white-space:nowrap}
+.rc-axis{font:600 24px/1.2 var(--f-body);color:var(--ink-soft)}
+.rc-tick{font:400 24px/28px var(--f-body);color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.rc-note{font:600 22px/1.3 var(--f-body);color:var(--ink)}
+.rc-auc{font:700 26px/34px var(--f-body);color:var(--ink);font-variant-numeric:tabular-nums}
+.rc-chip{box-sizing:border-box;padding:4px 16px;border-radius:999px;border:3px solid var(--emph);font:600 24px/1.2 var(--f-body);color:var(--ink);background:var(--ground)}
+.rc-chip-b{border:3px dashed var(--term)}
+.rc-list{position:absolute}
+.rc-cell{position:absolute;box-sizing:border-box;border-radius:12px;border:3px dashed var(--todo);color:var(--ink-soft)}
+.rc-rel{border:3px solid var(--ink-soft);background:color-mix(in srgb,var(--key) 14%,var(--ground))}
+.rc-rank{position:absolute;left:6px;top:2px;font:600 18px/1.2 var(--f-body);color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.rc-star{position:absolute;left:17px;top:19px;color:var(--key)}
+.rc-name{position:absolute;font:700 26px/1.2 var(--f-title);color:var(--ink)}
+.rc-step{fill:none;stroke-width:6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1 2}
+.rc-a{stroke:var(--emph)}
+.rc-b{stroke:var(--term)}
+.rc-rand{fill:none;stroke:var(--ink-soft);stroke-width:4;stroke-linecap:round;stroke-dasharray:1 2}
+.rc-orc{fill:none;stroke:var(--ink);stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1 2}
+.rc-area{fill:color-mix(in srgb,var(--term) 24%,var(--ground));stroke:none}
+.rc-end{position:absolute;box-sizing:border-box;display:grid;place-items:center;width:32px;height:32px;border:3px solid var(--ground);font:700 18px/1 var(--f-title);color:var(--ground)}
+.rc-end-a{border-radius:50%;background:var(--emph)}
+.rc-end-b{border-radius:6px;background:var(--term)}
+/* WP-93 (D-162): the walk of one ROC curve (alternative A, the live counter, chosen by the user): the cut, the band of the recommended top k, the cursor with two guides to the axes, the beads that stay, the odometers, the 2 x 2 board and the two formulas. The look of the four counts is the confusion page's (.cf-good / .cf-bad: a solid green frame for a right outcome, a dashed red one for a wrong one, D-068) */
+.rw-band{position:absolute;box-sizing:border-box;transform-origin:0 50%;background:color-mix(in srgb,var(--emph) 14%,var(--ground))}
+.rw-cut{position:absolute;box-sizing:border-box;width:6px;border-radius:3px;background:var(--emph)}
+.rw-cursor{position:absolute;box-sizing:border-box;width:24px;height:24px;border-radius:50%;background:var(--emph);border:4px solid var(--ground);box-shadow:0 0 0 3px var(--emph)}
+.rw-bead{position:absolute;box-sizing:border-box;width:14px;height:14px;border-radius:50%;background:var(--ground);border:4px solid var(--emph)}
+.rw-gh,.rw-gv{position:absolute;box-sizing:border-box;background:color-mix(in srgb,var(--emph) 60%,transparent)}
+.rw-gh{height:3px;transform-origin:0 0}
+.rw-gv{width:3px;transform-origin:0 100%}
+.rw-odo{display:inline-block;position:relative;overflow:hidden;vertical-align:bottom;flex:none}
+.rw-col{position:absolute;left:0;top:0;display:block;width:100%}
+.rw-val{display:block;white-space:nowrap;text-align:inherit}
+.rw-board{position:absolute}
+.rw-ch{position:absolute;text-align:center;font:600 24px/32px var(--f-body);color:var(--ink-soft);white-space:nowrap}
+.rw-rh{position:absolute;display:flex;align-items:center;justify-content:flex-end;text-align:right;font:600 24px/1.2 var(--f-body);color:var(--ink-soft);white-space:nowrap}
+.rw-ts{white-space:pre}
+.rw-k{text-align:left;font:700 24px/34px var(--f-body);color:var(--ink);font-variant-numeric:tabular-nums}
+.rw-cell{position:absolute;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;padding:0 22px;border-radius:14px;color:var(--ink)}
+.rw-good{border:4px solid var(--pos);background:color-mix(in srgb,var(--pos) 16%,var(--ground))}
+.rw-bad{border:4px dashed var(--neg);background:color-mix(in srgb,var(--neg) 14%,var(--ground))}
+.rw-abbr{font:700 30px/1 var(--f-title);color:var(--ink)}
+.rw-n{text-align:right;font:700 52px/60px var(--f-title);color:var(--ink);font-variant-numeric:tabular-nums}
+.rw-fm{position:absolute}
+/* WP-93 (D-174): a formula row is 66 px high (a fraction line at 28 px is 63.6 px: two lines of 1.12 in a font of .92) and its parts are centred on it; the fraction with the numbers (.rw-nf is an .fm-frac built by hand) holds odometers that are 29 px lines (the fraction's lines are 28.85); the second formula stands 440 px right of the first (left, set by the build) */
+.rw-fline{position:absolute;left:0;display:flex;align-items:center;height:66px;white-space:pre;font:600 28px/40px var(--f-body);color:var(--ink);font-variant-numeric:tabular-nums}
+.rw-ft{white-space:pre}
+.rw-f{text-align:left}
+.rw-res{text-align:left;font-weight:700}
+/* WP-74: chart-draw mode `seeds` (page one-run): the spread of one algorithm over random seeds (measured bands, synthetic dots), a number line of the untuned baseline, the practice cards */
+.sd-lbl{position:absolute;white-space:nowrap}
+.sd-tick{font:400 22px/26px var(--f-body);color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.sd-axis{font:600 22px/1.2 var(--f-body);color:var(--ink-soft)}
+.sd-mean{fill:none;stroke:var(--ink-soft);stroke-width:3;stroke-dasharray:10 8}
+.sd-band{position:absolute;box-sizing:border-box;border-radius:14px}
+.sd-band-0{background:color-mix(in srgb,var(--neg) 14%,var(--ground));border:3px dashed var(--neg)}
+.sd-band-1{background:color-mix(in srgb,var(--pos) 14%,var(--ground));border:3px solid var(--pos)}
+.sd-dot{position:absolute;box-sizing:border-box;width:26px;height:26px;border-radius:50%;border:4px solid var(--ink);background:var(--ground)}
+.sd-dot-1{background:var(--ink)}
+.sd-name{position:absolute;font:700 26px/1.2 var(--f-title);color:var(--ink)}
+.sd-band-lbl{padding:0 6px;background:var(--ground);font:600 24px/1.2 var(--f-body);color:var(--ink)}   /* WP-74: the ground plate lets the axis lines pass behind the label; 6px is LABEL_PAD in chart-seeds.js */
+.sd-tag{box-sizing:border-box;padding:4px 14px;border:3px dashed var(--ink-soft);border-radius:999px;font:600 22px/1.2 var(--f-body);color:var(--ink-soft);text-align:center}
+.sd-panel{position:absolute;box-sizing:border-box;border-radius:20px;border:3px solid var(--ink-soft);background:color-mix(in srgb,var(--ink) 4%,var(--ground))}
+.sd-title{position:absolute;text-align:center;font:700 28px/1.2 var(--f-title);color:var(--ink)}
+.sd-line{position:absolute;border-radius:2px;background:var(--ink-soft)}
+.sd-cap{position:absolute;font:600 22px/1.2 var(--f-body);color:var(--ink-soft)}
+.sd-pt{position:absolute;box-sizing:border-box;width:30px;height:30px}
+.sd-pt-rep{border-radius:6px;background:var(--neg);border:4px solid var(--ground)}
+.sd-pt-car{border-radius:50%;background:var(--emph);border:4px solid var(--ground)}
+.sd-pt-best{width:46px;height:46px;margin:-8px;border-radius:50%;border:4px solid var(--ink);background:none}
+.sd-val{position:absolute;font:600 24px/1.2 var(--f-body);color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.sd-arrow{fill:none;stroke:var(--neg);stroke-width:5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1 2}
+/* WP-93 (the user on page 22): the arrow's head is a small svg of its own, wiped in from the top (clip-path) after the shaft has drawn; the same red stroke, no dash pattern */
+.sd-head{position:absolute}
+.sd-arrow-head{fill:none;stroke:var(--neg);stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.sd-card{position:absolute;box-sizing:border-box;display:flex;align-items:center;gap:18px;padding:0 22px;border-radius:18px;border:3px solid var(--ink-soft);background:var(--ground)}
+.sd-big{flex:none;font:700 44px/1 var(--f-title);color:var(--ink);font-variant-numeric:tabular-nums}
+.sd-big-text{max-width:130px;font-size:28px;line-height:1.1}
+.sd-card-text{font:600 22px/1.25 var(--f-body);color:var(--ink-soft)}
+.sd-gold{position:absolute;display:grid;place-items:center;text-align:center;font:700 38px/1.15 var(--f-title)}
+/* WP-74: compare mode `columns` (pages paradigms, trust-system, offline-online): two or three columns with a title, a picture and ticked, crossed or plain lines; footer lines under them */
+.cl-col{position:absolute;box-sizing:border-box;overflow:hidden;padding:16px 24px;border-radius:22px;border:3px solid var(--ink-soft);background:color-mix(in srgb,var(--ink) 4%,var(--ground))}
+.cl-head{display:flex;align-items:center;gap:16px;height:58px;padding-bottom:10px;border-bottom:3px solid color-mix(in srgb,var(--ink-soft) 40%,var(--ground))}
+.cl-icon{flex:none;color:var(--ink-soft)}
+.cl-title{font:700 32px/1.1 var(--f-title);color:var(--ink)}
+.cl-list{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.cl-item{display:flex;align-items:flex-start;gap:12px;font:600 26px/1.22 var(--f-body);color:var(--ink)}
+.cl-mark{flex:none;margin-top:2px;fill:none;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.cl-mark-pro{stroke:var(--pos)}
+.cl-mark-con{stroke:var(--neg)}
+.cl-mark-none{fill:var(--ink-soft);stroke:none}
+.cl-foot{position:absolute;box-sizing:border-box;display:grid;place-items:center;padding:0 22px;text-align:center;border-radius:18px;border:3px solid var(--ink-soft);background:var(--ground);font:600 26px/1.25 var(--f-body);color:var(--ink)}
+.cl-gold{border:none;background:none;font:700 40px/1.15 var(--f-title)}
+/* WP-93 (D-164): the page `trust-system` puts the formula and the toy numbers of each measure in its column: a line with the mark `formula` is boxed and bold; `density: tight` gives five short lines a column the room (24 px type, tighter gaps) */
+.cl-formula{align-self:flex-start;box-sizing:border-box;display:flex;align-items:center;padding:6.9px 14px 4.4px;margin:-.4px 0 .4px;border:3px solid var(--ink-soft);border-radius:12px;background:var(--ground);font-weight:700;font-variant-numeric:tabular-nums}
+/* WP-93 (D-183, the user's review of 2026-11-01, page 8: "the formula-like boxes in the three cards should be vertically centred"): the content of a formula box has the SAME AIR above and below its ink, 10 px, in all three boxes. The ink of a text fraction runs
+   from the top of its tallest ascender to the baseline of the denominator. Chrome lays the line out with whole-pixel metrics: in the fraction's 22.08 px font the ascent is 22 and the descent 7 (a content area of 29), the line is 1.12 high (24.73), so the
+   leading is -4.27 and its top half is floored to -3: the baseline stands 19 px under the top of a line and 5.73 above its bottom, the ascenders (.715 em, 15.8 px) reach to 3.2 px under the top. So with equal padding the ink sat 2.5 px too high (7.0 above and 9.7
+   below, measured in the visible tab); a padding of 6.9 px above and 4.4 px below gives 10.1 and 10.1. The numbers are for the stage's 24 px type (layout is in stage px and scaled afterwards, so they hold on every screen). The fraction of two badges
+   ({A+}) has its circles as its ink, flush with the fraction once the lines are flex rows, so its padding is the air itself (10 px). Inside, the lines are flex rows centred on one axis: the text before the fraction ("mean =") is centred on the bar (the equals sign
+   stands on it: it was 2.3 px above it) and a badge sits in its line instead of pushing the line down by 3 px (an inline badge with vertical-align: middle grew its line below the baseline). The gap of .2 em is the space that a flex row drops. Only the boxes of this page are touched;
+   the shared .fm-* rules are as they were. */
+.cl-formula:has(.fm-badge){padding:10px 14px}
+/* the box among its neighbours (measured in the visible tab): with the 8 px gap of the list a plain line leaves 6.8 px under its baseline and 6.16 px above its caps, so the box stood 14.8 px under the baseline above it and 14.0 above the caps below it; the box's margin (-.4 px above, .4 px below, in the first rule) makes both 14.4. The first line of a card has the header's rule above it (12 px of list margin): 2.4 px more gives the same 14.4 px under the rule. */
+.cl-list>.cl-formula:first-child{margin-top:2.4px}
+.cl-formula .cl-text{display:flex;align-items:center;gap:.2em}
+.cl-formula .fm-num,.cl-formula .fm-den{display:flex;align-items:center;justify-content:center;gap:.2em}
+.cl-tight .cl-title{font-size:30px}
+.cl-tight .cl-list{gap:8px;margin-top:12px}
+.cl-tight .cl-item{gap:10px;font:600 24px/1.2 var(--f-body)}
+.cl-tight .cl-formula{font-weight:700}
+/* WP-93 (the user's w07 review, pages 8 and 9): the formula mark-up (engine/widgets/formula.js): a fraction with a horizontal bar, a radical with a bar over its body, and a signed quantity as one badge. A drawn line never wraps (a fraction
+   is two lines high and one line wide); the bars and the badge's circle are currentColor (ink): a graphic needs 3 : 1 and the ink is 12 : 1 or more on the ground in both themes. */
+/* the bar spans the WIDER of numerator and denominator (the user, 2026-11-01: it had spanned the numerator only, "TN" over "FP + TN" had a bar a third as long as the denominator): the two lines are stretched to the width of the
+   frac, so the bar under the numerator is as wide as the wider line plus the same .12em of air on both sides (the padding), in both themes and at every size; the lines are centred in it. Nested fractions follow: a fraction inside a
+   numerator is just a wider line. */
+.fm-frac{display:inline-flex;flex-direction:column;align-items:stretch;vertical-align:middle;margin:0 .18em;font-size:.92em;line-height:1.12;text-align:center}
+.fm-num{padding:0 .12em .08em;border-bottom:.09em solid currentColor}
+.fm-den{padding:.06em .12em 0}
+.fm-sqrt{display:inline-flex;align-items:stretch;vertical-align:middle;margin:0 .1em}
+.fm-rad{flex:none;width:.7em;height:auto;fill:none;stroke:currentColor;stroke-width:2px;stroke-linecap:round;stroke-linejoin:round}
+.fm-rad path{vector-effect:non-scaling-stroke}
+.fm-body{display:inline-block;margin-left:-.05em;padding:0 .14em;border-top:.09em solid currentColor}
+.fm-badge{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;box-sizing:border-box;min-width:1.5em;height:1.5em;padding:0 .32em;border:.09em solid currentColor;border-radius:999px;font-size:.8em;font-weight:700;line-height:1;white-space:nowrap}
+.fm-sign{margin-left:.04em}
+/* a subscript (log_2, r_ui): smaller and lowered by position, so the line height of the text it stands in does not change (a vertical-align would grow the line box and move the fixed boxes of the widgets) */
+.fm-sub{font-size:.7em;line-height:0;position:relative;top:.3em;vertical-align:baseline}
+/* WP-93 (D-175, the user chose it on review board 2): the parentheses that enclose a fraction grow to its height, like LaTeX \left( \right): the glyph stretched in y about the bar (a fraction is 2.27 em high, the stretched glyph about 1.8 em: from the top of the numerator's text to the bottom of the
+   denominator's, as in a typeset formula), thin (400) so the stretch does not fatten it, a little air at the sides. formula.js marks only a pair with a fraction inside; the transform moves no box, so the line (as high as the fraction) does not change. */
+.fm-par{display:inline-block;vertical-align:middle;transform:scaleY(1.9);transform-origin:50% 52%;padding:0 .07em;font-weight:400}
+.cl-text[data-formula]{white-space:nowrap}
+/* the other shape of a badge (the review board shows both, the user chooses): no circle, the sign raised, class `fm-sup` on the widget's root */
+.fm-sup .fm-badge{display:inline;min-width:0;height:auto;padding:0;border:0;border-radius:0;font-size:1em}
+.fm-sup .fm-sign{margin-left:0;font-size:.72em;vertical-align:.55em}
+/* WP-74: table-highlight mode `pairs` (page diversity): a list of three films, the similarity of each pair, intra-list diversity as the mean dissimilarity, and "diversity is not accuracy" */
+.pr-panel{position:absolute;box-sizing:border-box;border-radius:20px;border:3px solid var(--ink-soft);background:color-mix(in srgb,var(--ink) 4%,var(--ground))}
+.pr-title{position:absolute;text-align:center;font:700 30px/44px var(--f-title);color:var(--ink)}
+.pr-poster{position:absolute;box-sizing:border-box;display:grid;place-items:center;border-radius:14px;border:3px solid var(--ink-soft);background:var(--ground);color:var(--ink-soft)}
+.pr-bracket{position:absolute;box-sizing:border-box;border:3px solid var(--ink-soft);border-top:0;border-radius:0 0 12px 12px}
+.pr-sim{position:absolute;left:50%;bottom:0;transform:translate(-50%,50%);box-sizing:border-box;padding:2px 12px;border:3px solid var(--ink-soft);border-radius:999px;background:var(--ground);font:700 24px/1.2 var(--f-body);color:var(--ink);font-variant-numeric:tabular-nums}
+.pr-read{position:absolute}
+.pr-read-title{height:30px;font:600 24px/30px var(--f-body);color:var(--ink-soft)}
+/* WP-93 (D-174): the readout's formula is ONE line in a box of fixed height (58 px, the fraction line is about 54 px high at 24 px), so the track below it stands where the sums in table-pairs.js say */
+.pr-read-formula{display:flex;align-items:center;height:58px;font:700 24px/1.2 var(--f-body);color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.pr-track{margin-top:10px;height:24px;box-sizing:border-box;border:3px solid var(--ink-soft);border-radius:8px;background:var(--ground)}
+.pr-gauge{display:block;height:100%;border-radius:4px;background:var(--emph)}
+/* WP-93 (the user's w07 review, page 7): a pill has NO frame (a dashed red and a solid green frame read as the keys of a legend): a tint of the role colour (18 % over the ground), a triangle in the role colour and the words
+   in ink. Contrast by hand (tests/js/table-pairs-build.test.mjs, config/themes): the words over the tint 10.17 : 1 at the least, the triangle 3.82 : 1 (negative, light) to 7.60 : 1 (a graphic needs 3 : 1; the words say the same thing, D-068) */
+.pr-pill{position:absolute;box-sizing:border-box;display:grid;grid-auto-flow:column;column-gap:8px;justify-content:center;align-items:center;padding:0 12px;border-radius:999px;font:600 24px/1.2 var(--f-body);color:var(--ink)}
+.pr-pill-down{background:color-mix(in srgb,var(--neg) 18%,var(--ground))}
+.pr-pill-up{background:color-mix(in srgb,var(--pos) 18%,var(--ground))}
+.pr-tri{flex:none;stroke:none}
+.pr-pill-down .pr-tri{fill:var(--neg)}
+.pr-pill-up .pr-tri{fill:var(--pos)}
+.pr-arrow{position:absolute;color:var(--ink-soft);fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round}
+/* the gold sentence stands under panel A (720 px) in two balanced lines: 26 px on a 1.12 line is 58 px, inside its 60 px box (the text is about 780 px long at 26 px) */
+.pr-gold{position:absolute;display:grid;place-items:center;text-align:center;font:700 26px/1.12 var(--f-title);text-wrap:balance}

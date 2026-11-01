@@ -1,0 +1,1136 @@
+/* WP-46: MF page - the trace layout gains a training-curve and a latent-space panel; the
+   embedding scatter is hand-rolled SVG (points move with a CSS transition on transform). Tokens
+   come from tokens.css; the shared trace panels live in trace.css.
+
+   WP-123: the MF and DNN pages are layout F (trace.css `.layout-f`: ONE sticky player strip, then the block of fixed height - the sub-matrix over
+   formula | code at the left, the compact flowchart over the epoch table at the right). WP-154: the neural page's network diagram is the sub-matrix panel's second tab, inside the
+   block. WP-158: the training curve and the latent space are the second tabs of the Code and the Formula panel (below), so nothing follows the block in the page flow: the walk
+   needs no scrolling. Their sizes depend on the window, never on a step: nothing moves while stepping. This file used to carry the two pages' own grid (narration / controls / heat / flow ... areas, the WP-92a wide-page flowchart row);
+   no page uses that grid any more. A rule here needs `.layout-f.has-training` (3 classes), so it wins over trace.css's `.trace-layout.layout-f`. */
+
+/* WP-158: there is no row of training panels under the block any more - the training curve is the second tab of the CODE panel and the latent space the second tab of the FORMULA
+   panel (the block's lower row; each panel's head is a tab strip, components/trace-page.js `buildLowerTabs`), so the page is the strip and the block (trace.css `.layout-f`).
+   The two second bodies share the panel with the first one and only one shows, so a panel keeps the size the block's grid gives it. A rule here needs `.layout-f.has-training`. */
+/* WP-158: the height of the block's lower row (Formula | Code, each with its second tab) is ONE number on these pages, `--lower-h`: the block's grid row, and the sub-matrix panel
+   above it takes the rest of the block (`--blk-h` - the row - the 12 px gap). The uCF / iCF pages keep the 252 px (240 + 12) trace.css bakes in; here the number can change without
+   touching a rule (the one-column page below 1100 px has its own fixed heights, trace.css). User decision 2026-10-12: 300 px, not the 240 px of the first cut - measured at 1536 x 864 (block
+   672 px) the latent space got a 149 px scatter in 240 px (labels 5 px, unreadable), 209 px in 300 px (labels 7 px); the sub-matrix panel above takes 360 px instead of 420. */
+@media (min-width: 1101px) {
+  .layout-f.has-training {
+    --lower-h: 300px;
+  }
+  .layout-f.has-training .trace-block {
+    grid-template-rows: auto minmax(var(--lower-h), 1fr);
+  }
+  .layout-f.has-training .area-heat {
+    max-height: calc(var(--blk-h) - var(--lower-h) - 12px);
+  }
+  .layout-f.has-training .area-heat.has-panel-tabs,
+  .layout-f.has-training .area-heat:has(.ranked) {
+    height: calc(var(--blk-h) - var(--lower-h) - 12px);
+  }
+}
+.layout-f .heat-tabs-head > .zoom-buttons {
+  align-self: center; /* the tab head aligns its tabs to the bottom edge; the size group sits at its middle like the other head groups */
+}
+.layout-f.has-training .has-lower-tabs .panel-body[hidden] {
+  display: none; /* a tab's body while the other shows: no other rule may show it again (the latent space's body is `display: flex`) */
+}
+.layout-f.has-training .curve-body,
+.layout-f.has-training .embedding-body {
+  flex: 1 1 0;
+  min-height: 0;
+}
+/* the chart fills its body (Plotly follows the host: the observer in components/curve-panel.js); the scatter is an SVG with a viewBox: it takes what is left of the body between its
+   head line and its legend and keeps its aspect ratio, so neither needs a scroll bar and neither changes with a step. The Formula panel's size group (`--formula-zoom` on the panel,
+   - / +) enlarges the scatter, which then scrolls inside `.embedding-stage`; the Code panel's (`--code-zoom`) sizes the curve's text (curve-panel.js reads it at every draw). */
+.layout-f.has-training .curve-body {
+  overflow: hidden;
+  padding: 2px 6px 4px; /* the box is a row of the block: every pixel goes to the chart */
+}
+.layout-f.has-training .curve-body .curve-host {
+  height: 100%;
+  min-height: 0; /* the base rule's 250 px is the standalone chart's: the box here is as tall as the block's lower row */
+}
+.layout-f.has-training .embedding-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 4px 10px 6px;
+}
+.layout-f.has-training .embed-legend {
+  flex: none;
+}
+.embedding-stage {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  position: relative; /* WP-160: the epoch bubble's slot sticks to its top left */
+}
+.layout-f.has-training .embedding-stage .embedding-svg {
+  display: block;
+  width: calc(100% * var(--formula-zoom, 1));
+  height: calc(100% * var(--formula-zoom, 1));
+  max-width: none;
+  max-height: none;
+}
+/* WP-160: the epoch is a bubble inside the scene, at its top left: a slot of no height that sticks to the stage's corner (an enlarged scatter scrolls under it), so the plot keeps
+   the room the head line used to take. The slot ignores the pointer, the bubble is the card's colour a little see-through: a point never hides behind it (the plot starts
+   26 px under the stage's top, the bubble is 22 px high at 6 px). */
+.layout-f.has-training .embedding-stage .embedding-badge {
+  position: sticky;
+  top: 6px;
+  left: 0;
+  padding-left: 6px; /* (sticky `left` acts only once the stage is scrolled: the 6 px are the slot's own) */
+  height: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+.layout-f.has-training .embedding-stage .embedding-frame {
+  display: block; /* (not inline-block: a line box's strut put the bubble 4 px lower in the presenting view) */
+  width: fit-content;
+  padding: 1px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card) 90%, transparent);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.presenting .layout-f.has-training .embedding-stage .embedding-frame {
+  font-size: 14px;
+}
+/* no glide while the scene itself is laid out again (a resize, the tab opening): only a frame change moves a point with a transition (embedding-panel.js `layout()`) */
+.layout-f.has-training .embedding-svg.is-laying-out .embed-point {
+  transition: none;
+}
+
+/* -- WP-122: the factor panel of the MF page (components/factor-panel.js, logic in util/factor-view.js) ------------------------------------------------------
+   WP-152: it is the SECOND TAB of the sub-matrix panel (`.factors-body` lies over the matrix body, which keeps the panel's size - trace.css `.area-heat`; the head
+   group `.factor-head-slot` stands in that panel's tab head, hidden on the matrix tab). The panel is as tall as the block allows, whatever the step or the tab
+   (`.has-panel-tabs`), and the grid scrolls inside it.
+   One picture of R^ = mu + b_u + b_i + P Q^T with the rows and columns of the sub-matrix: the film names and the rows of Q^T on top, the user names, b_u and P at the
+   left, the predicted matrix R^ in the corner. A row and a column of every kind have ONE fixed size (the --f* variables: bigger when presenting), so a frame or a step
+   never moves a cell; the header row, the user names and - while they leave room - the factor columns and the rows of Q^T stay put while the box scrolls. Colour: a rated
+   value is a tint of one hue (navy), a factor's sign is navy / maroon, its size the strength; text stays ink (measured, both themes). */
+.layout-f.has-training .area-heat .factors-body {
+  --fl-w: 96px; /* user names */
+  --fp-w: 58px; /* b_u, one factor of P */
+  --fg-w: 14px; /* the gap between P and R^ */
+  --fc-w: 52px; /* one film: Q^T, b_i, R^ */
+  --fh-h: 104px; /* the film names, written vertically (two lines of 16 characters) */
+  --fq-h: 26px; /* a row of Q^T, the row of b_i */
+  --fr-h: 38px; /* a user: R^ and, under it, the residual */
+  --ff: 13px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 6px 10px 10px;
+  overflow: hidden;
+}
+.layout-f.has-training .area-heat .factors-body[hidden] {
+  display: none; /* the rule above sets `display: flex` (it would win over the UA's [hidden]) */
+}
+.presenting .layout-f.has-training .area-heat .factors-body {
+  --fl-w: 120px;
+  --fp-w: 70px;
+  --fg-w: 16px;
+  --fc-w: 62px;
+  --fh-h: 124px;
+  --fq-h: 34px;
+  --fr-h: 50px;
+  --ff: 16px;
+}
+.factor-head-slot,
+.network-head-slot,
+.profile-head-slot {
+  display: flex;
+  align-items: center;
+  align-self: center; /* the tab head aligns its tabs to the bottom edge */
+  gap: 10px;
+  margin-left: auto;
+  min-width: 0;
+}
+.factor-head-slot:empty,
+.factor-head-slot[hidden],
+.network-head-slot[hidden],
+.profile-head-slot[hidden] {
+  display: none; /* the matrix tab is open (or the trace has no factor view) */
+}
+.factor-chips {
+  display: inline-flex;
+  gap: 6px;
+}
+.factor-chip {
+  padding: 1px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  font: inherit;
+  font-size: 12px;
+  color: var(--strong);
+  cursor: pointer;
+}
+.factor-chip.active {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: var(--card); /* the ground colour on the navy: white on the light theme's dark navy, dark on the dark theme's light one (white there was 2.5:1, measured) */
+}
+.factor-chip:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: 2px;
+}
+.factor-readout {
+  min-width: 11em; /* the place is kept while the target's value is still hidden */
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--navy);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.factor-readout.is-empty {
+  visibility: hidden;
+}
+.layout-f.has-training .area-heat .factors-body > .formula-idle {
+  margin: 12px 4px;
+}
+.factor-caption {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 16px;
+  padding: 0 2px 6px;
+  font-size: 12px;
+  color: var(--strong);
+}
+.factor-formula {
+  font-weight: 700;
+  color: var(--navy);
+}
+.factor-frame-note,
+.factor-note,
+.factor-key {
+  color: var(--strong); /* --muted was 3.5:1 on the light theme's ground (measured) */
+}
+.factor-scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+}
+.factor-grid {
+  display: grid;
+  width: max-content;
+  font-size: var(--ff);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+.factor-grid > * {
+  box-sizing: border-box;
+}
+.factor-blank,
+.factor-gap {
+  background: var(--card);
+}
+/* a cell: one or two lines centred, a 1 px ground-coloured edge between neighbours */
+.factor-cell {
+  height: var(--fr-h);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--card);
+  border-radius: 3px;
+  background: var(--card);
+  color: var(--ink);
+}
+.factor-p {
+  height: auto; /* the row's height is R^'s */
+}
+.factor-q {
+  height: var(--fq-h);
+}
+.factor-r {
+  background: color-mix(in srgb, var(--navy) calc(var(--t, 0) * 1%), var(--card)); /* a rated value: one hue, stronger for a higher value */
+}
+/* WP-157: the SIGN of a factor value is the centred sub-matrix's diverging scale (tokens.css `--div-pos` purple above zero, `--div-neg` orange-brown below), not the navy / maroon that
+   mean the user / the film elsewhere; the strength is the same `--t` as before (the rated value above and the result cell keep the one navy hue: they are rating values, not signs) */
+.factor-cell.is-pos {
+  background: color-mix(in srgb, var(--div-pos) calc(var(--t, 0) * 1%), var(--card));
+}
+.factor-cell.is-neg {
+  background: color-mix(in srgb, var(--div-neg) calc(var(--t, 0) * 1%), var(--card));
+}
+.factor-residual {
+  font-size: 0.78em;
+  color: var(--ink); /* the smallest text on the strongest tint: --strong gave 3.6:1 in the light theme (measured), --ink reaches AA */
+}
+.factor-cell.is-valid {
+  opacity: 0.5; /* a rating the trainer held out: the model was not fitted on it */
+}
+.factor-cell.is-hidden-target {
+  border: 1px dashed var(--navy);
+  background: var(--card);
+  color: var(--c-item);
+  font-weight: 700;
+}
+.factor-cell.is-target {
+  outline: 2px solid var(--navy);
+  outline-offset: -2px;
+}
+.factor-cell.is-result {
+  background: var(--navy);
+  color: var(--card);
+  font-weight: 700;
+  outline: 2px solid var(--ink);
+  outline-offset: -2px;
+}
+.factor-cell.is-result .factor-residual {
+  color: var(--card);
+}
+.factor-cell.is-target-col {
+  border-left: 2px solid var(--c-item);
+}
+.factor-cell.in-row {
+  box-shadow: inset 0 2px 0 var(--navy), inset 0 -2px 0 var(--navy);
+}
+.factor-cell.in-col {
+  box-shadow: inset 2px 0 0 var(--navy), inset -2px 0 0 var(--navy);
+}
+.factor-cell.in-row.in-col {
+  box-shadow: inset 0 2px 0 var(--navy), inset 0 -2px 0 var(--navy), inset 2px 0 0 var(--navy), inset -2px 0 0 var(--navy);
+}
+/* the names */
+.factor-rowlabel {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  display: block;
+  padding: 0 8px;
+  height: var(--fr-h);
+  line-height: var(--fr-h);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: var(--card);
+  box-shadow: 3px 0 0 0 var(--card);
+  color: var(--strong);
+}
+.factor-rowlabel.factor-qrow {
+  height: var(--fq-h);
+  line-height: var(--fq-h);
+  font-size: 0.92em;
+  font-style: italic;
+}
+.factor-user.is-first {
+  color: var(--c-user);
+  font-weight: 600;
+}
+.factor-rowlabel.is-marked {
+  color: var(--c-user);
+  font-weight: 700;
+}
+.factor-film.is-marked {
+  color: var(--c-item);
+  font-weight: 700;
+}
+/* the header row: the film names (the heat grid's vertical heads) and P's column names */
+.factor-head-cell {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  height: var(--fh-h);
+  background: var(--card);
+  box-shadow: 0 3px 0 0 var(--card);
+}
+.factor-corner,
+.factor-ph {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 6px;
+  font-size: 0.92em;
+  color: var(--strong);
+}
+.factor-corner {
+  left: 0;
+  z-index: 7;
+  font-weight: 700;
+  color: var(--navy);
+}
+.factor-film .heat-head-text {
+  font-size: var(--ff);
+}
+/* the columns of b_u and P stay at the left while R^ scrolls under them - when they are few enough to leave room for it */
+.freeze-p .factor-p,
+.freeze-p .factor-qpad {
+  position: sticky;
+  left: calc(var(--fl-w) + var(--fp-w) * var(--pc, 0));
+  z-index: 2;
+}
+.freeze-p .factor-ph {
+  position: sticky;
+  left: calc(var(--fl-w) + var(--fp-w) * var(--pc, 0));
+  z-index: 6;
+}
+/* the rows of Q^T and b_i stay under the film names - when they are few enough to leave room for the users below */
+.freeze-q .factor-qrow,
+.freeze-q .factor-q {
+  position: sticky;
+  top: calc(var(--fh-h) + var(--fq-h) * var(--qi, 0));
+  z-index: 4;
+  background-color: var(--card);
+}
+.freeze-q .factor-q {
+  background: var(--card);
+}
+.freeze-q .factor-q.is-pos {
+  background: color-mix(in srgb, var(--div-pos) calc(var(--t, 0) * 1%), var(--card)); /* WP-157: as `.factor-cell.is-pos` */
+}
+.freeze-q .factor-q.is-neg {
+  background: color-mix(in srgb, var(--div-neg) calc(var(--t, 0) * 1%), var(--card));
+}
+.freeze-q .factor-rowlabel.factor-qrow {
+  left: 0;
+  z-index: 6;
+}
+.freeze-p.freeze-q .factor-qpad {
+  z-index: 6;
+}
+
+/* -- training curve ------------------------------------------------------------------------------ */
+
+.curve-host {
+  min-height: 250px;
+}
+
+/* -- embedding scatter ---------------------------------------------------------------------------- */
+
+.embedding-frame {
+  font-weight: 700;
+  color: var(--ink);
+}
+.embedding-note {
+  color: var(--muted);
+  font-size: 11px;
+}
+.embedding-svg {
+  display: block;
+  width: 100%;
+  max-height: 320px;
+  overflow: visible;
+}
+.embed-axis {
+  stroke: var(--line);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+}
+.embed-axis-label {
+  font-size: 10px;
+  fill: var(--muted);
+}
+.embed-point {
+  transition: transform 0.55s ease;
+  cursor: default;
+}
+.embed-point .dot {
+  fill: var(--c-user); /* WP-160: the app's role colours - a user is the users' red, a film the films' blue, here as on every other page */
+  stroke: var(--card);
+  stroke-width: 1.5;
+}
+.embed-point.kind-item .dot {
+  fill: var(--c-item);
+}
+.embed-point .lbl {
+  font-size: 10px;
+  fill: var(--ink);
+  paint-order: stroke;
+  stroke: var(--card);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+.embed-point.role-active .dot,
+.embed-point.role-target .dot {
+  stroke: var(--green);
+  stroke-width: 2.5;
+}
+.embed-point.role-active .lbl,
+.embed-point.role-target .lbl {
+  font-weight: 700;
+}
+.embed-point.hl-target .dot,
+.embed-point.hl-active .dot,
+.embed-point.hl-selected .dot {
+  stroke: var(--green);
+  stroke-width: 3.5;
+  filter: drop-shadow(0 0 3px var(--green));
+}
+.presenting .embed-point .lbl {
+  font-size: 13px;
+}
+.embed-legend {
+  display: flex;
+  flex-wrap: wrap; /* WP-160: the note about the axes joins the row (a narrow box or the longer Turkish line wraps it under the swatches) */
+  align-items: baseline;
+  gap: 2px 14px;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.embed-legend .sw {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--c-user);
+  margin-right: 5px;
+  vertical-align: middle;
+}
+.embed-legend .sw.item {
+  background: var(--c-item);
+  border-radius: 2px;
+  transform: rotate(45deg) scale(0.85);
+}
+
+/* -- parameter form ------------------------------------------------------------------------------ */
+
+/* WP-46: the MF form hides the fields an algorithm ignores through the `hidden` attribute; the
+   `.param-field { display: flex }` rule in trace.css would otherwise win over the UA stylesheet. */
+.param-field[hidden],
+.param-check[hidden] {
+  display: none;
+}
+
+/* -- WP-47: DNN page - the architecture diagram -------------------------------------------------------------------------------------------------------------------
+   WP-154: it is the SECOND TAB of the sub-matrix panel (`.network-body` lies over the matrix body, like the factor matrices' body on the MF page: trace.css `.area-heat`).
+   By default the WHOLE diagram fits the tab (the svg is as wide and as tall as the scroll box, its viewBox keeps the aspect ratio: nothing scrolls, the page never moves); the
+   size group in the tab's head (- / +, `--network-zoom`: 1.0x = fits) shrinks or enlarges it from there, and an enlarged diagram scrolls inside `.network-scroll` (the footer
+   stays) with the stage of the step kept in view (network-panel.js). The text is 10.5 px (titles) and 9 px (details) in the diagram's own units, so on screen it is those times the
+   scale the fit gives. */
+.layout-f.has-training .area-heat .network-body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 6px 10px 10px;
+  overflow: hidden;
+}
+.layout-f.has-training .area-heat .network-body[hidden] {
+  display: none; /* the rule above sets `display: flex` (it would win over the UA's [hidden]) */
+}
+/* WP-165a: the svg is as big as the DRAWING it holds, not as big as the scroll box: `--net-ratio` (set by network-panel.js: the drawing's width over its height) and the box's own size
+   (`container-type: size` makes 100cqw / 100cqh the scroll box's client size) give the size that FITS the box - the smaller of "as wide as the box" and "as tall as the box" -
+   and the size group's `--network-zoom` multiplies it. Before, the svg element was box x zoom on BOTH axes, its viewBox centred the drawing inside it, and the axis the drawing does not
+   fill (a wide drawing in a tall box, a tall one in a wide box) scrolled over empty space: at 1.1x both bars were there in every window measured, one of them for nothing (up to 320 px of
+   emptiness). Now a bar appears only on the axis the drawing overflows; at 1.0x the drawing is exactly the box on its limiting axis and `margin: auto` centres it on the other (a
+   flex item with auto margins is centred while it fits and starts at the edge once it overflows, so the scroll range is never cut off). */
+.network-scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+  container-type: size;
+  display: flex;
+}
+.network-body .network-svg {
+  display: block;
+  flex: none;
+  margin: auto;
+  width: calc(min(100cqw, 100cqh * var(--net-ratio, 2)) * var(--network-zoom, 1));
+  height: calc(min(100cqh, 100cqw / var(--net-ratio, 2)) * var(--network-zoom, 1));
+  max-width: none;
+}
+/* WP-222: the feature network's drawing (sixteen stages, two-sided: network-panel.js `layoutTwoSided`) is fitted by the tab's WIDTH only - as wide as the scroll box, as tall as its shape
+   makes it - and scrolls vertically inside it (the stage a step talks about is centred by `follow`, the footer stays). Fitted on both axes it would be 0.32x in this wide, short tab (the
+   9-unit details 4 px high); by width it is 0.93x at 1536 and 1.0x in the stacked layout of 1100. Top-aligned (`margin: 0 auto`): the vertical scroll starts at the top of the drawing. */
+.network-body .network-scroll.fit-width .network-svg {
+  width: calc(100% * var(--network-zoom, 1)); /* a percentage: the box's width WITHOUT the scrollbar it grows (100cqw is the box with it, so the drawing overflowed sideways by the scrollbar's 15 px) */
+  height: auto;
+  aspect-ratio: var(--net-ratio, 2);
+  align-self: flex-start; /* a stretched flex item ignores the aspect ratio: the drawing would be as tall as the box, not as tall as its shape */
+  margin: 0 auto;
+}
+.network-body .heat-note {
+  flex: none;
+}
+/* WP-245: the feature network's vertical drawing (network-panel.js: one column per tower, the join below, the stack under it) is fitted on BOTH axes like the plain grid - it is as tall as the
+   flowchart column's whole body and about as wide as the flowchart (467 px), nothing scrolls - but never enlarged past 1.25x: with few columns (the ids-only network is 300 units wide) the fit
+   would otherwise blow it up to a poster. `--net-units` is the drawing's width in units (set by the panel); the height follows from the aspect ratio. */
+.network-body .network-svg.net-vertical {
+  width: calc(min(100cqw, 100cqh * var(--net-ratio, 2), var(--net-units, 100000) * 1.25px) * var(--network-zoom, 1));
+  height: auto;
+  aspect-ratio: var(--net-ratio, 2);
+}
+/* WP-245: an arrow of the vertical drawing is a path with right angles (the plain drawing's are lines): no fill, or the browser closes and fills the bend */
+.net-edge-path {
+  fill: none;
+  stroke-linejoin: round;
+}
+.net-rect {
+  fill: var(--card);
+  stroke: var(--line);
+  stroke-width: 1.5;
+}
+/* WP-168b: the two id boxes are entities, so they wear the app's role colours (tokens.css: the users' red, the films' blue): a light tint of the role as the ground, the role as the
+   frame and the role's text mix (the one every label of the role uses) as the title and the name; the row number is --strong (the muted grey is 3.5 : 1 on a card, less on a tint).
+   The rules stand before the highlight rules on purpose: a lit stage's frame (the pulsing navy one, the `neighbor` grey of the build step) is the same on every box and wins, so the
+   ground and the text keep saying WHICH id it is while it is lit. The output's maroon frame is a different red (#800000) on a ground-less box at the other end of the drawing.
+   (tests/app/test_network_inputs.py recomputes every contrast from tokens.css, both themes.) */
+.net-box.role-user .net-rect {
+  fill: color-mix(in srgb, var(--c-user) 11%, var(--card));
+  stroke: var(--c-user);
+  stroke-width: 2;
+}
+.net-box.role-item .net-rect {
+  fill: color-mix(in srgb, var(--c-item) 11%, var(--card));
+  stroke: var(--c-item);
+  stroke-width: 2;
+}
+/* the ring: a second, inner frame of a LIT id box (the pulsing navy frame outside is the same on every stage; the ring is what still says "the user" / "the film"); hidden otherwise */
+.net-ring {
+  fill: none;
+  stroke: none;
+}
+.net-box.role-user.hl-active .net-ring {
+  stroke: var(--c-user);
+  stroke-width: 1.5;
+}
+.net-box.role-item.hl-active .net-ring {
+  stroke: var(--c-item);
+  stroke-width: 1.5;
+}
+.net-box.kind-output .net-rect {
+  stroke: var(--maroon);
+}
+.net-box.hl-active .net-rect {
+  stroke: var(--navy);
+  stroke-width: 3;
+  animation: node-pulse 1.2s ease-in-out infinite;
+}
+.net-box.hl-neighbor .net-rect {
+  stroke: var(--strong);
+}
+.net-box.hl-result .net-rect {
+  stroke: var(--green);
+  stroke-width: 3;
+}
+.net-title {
+  font-size: 10.5px;
+  font-weight: 700;
+  fill: var(--navy);
+}
+.net-box.hl-active .net-title {
+  fill: var(--ink);
+}
+.net-meta {
+  font-size: 9px;
+  fill: var(--muted);
+}
+.net-box.kind-input.role-user .net-title,
+.net-box.kind-input.role-user .net-value {
+  fill: color-mix(in srgb, var(--c-user) 60%, var(--ink)); /* WP-168b: the text mix of the role (also while the box is lit: `.hl-active .net-title` is the ink) */
+}
+.net-box.kind-input.role-item .net-title,
+.net-box.kind-input.role-item .net-value {
+  fill: color-mix(in srgb, var(--c-item) 60%, var(--ink));
+}
+.net-box.kind-input.role-user .net-meta,
+.net-box.kind-input.role-item .net-meta {
+  fill: var(--strong);
+}
+/* WP-168a: the name an id input shows (the user / the film behind the index): the second line of its box, in the ink the active title takes (the index below it is `.net-meta`) */
+.net-value {
+  font-size: 10px;
+  font-weight: 600;
+  fill: var(--ink);
+}
+/* WP-157: a bar's sign is the centred sub-matrix's diverging scale (tokens.css: purple above zero, orange-brown below), not navy / maroon (the user / film hues, the frames of the boxes) */
+/* WP-157a: the bar's edge is a thin line in the page's ink (`vector-effect: non-scaling-stroke`: one screen pixel at every size of the diagram). The poles of the diverging scale read only
+   2.3 - 2.6 : 1 against the box's card ground (the old navy / maroon 6.5 - 13 : 1), below the 3 : 1 a lone graphic wants; the ink edge reads 12.6 : 1 (light) / 13.7 : 1 (dark) against it
+   (tests/app/test_sign_palette.py recomputes it), so a bar and its extent are found whichever hue it has; the sign is still the bar's side of the baseline and its hue. */
+.net-bar {
+  stroke: var(--ink);
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+}
+.net-bar.pos {
+  fill: var(--div-pos);
+}
+.net-bar.neg {
+  fill: var(--div-neg);
+}
+.net-baseline {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.net-more {
+  font-size: 9px;
+  fill: var(--muted);
+}
+.net-edge {
+  stroke: var(--muted);
+  stroke-width: 1.4;
+}
+.net-arrowhead {
+  fill: var(--muted);
+}
+/* WP-168c: the bubble a hovered / focused box of the diagram shows (components/network-panel.js): the app's help-bubble look (navy ground, the on-navy ink), `position: fixed` so the tab's
+   `overflow: hidden` does not clip it, sized in rem so presenting mode (root 20 px) enlarges it with the rest of the page; it never takes the pointer (`pointer-events: none`). */
+.net-tip {
+  position: fixed;
+  z-index: 60;
+  width: 22rem;
+  max-width: calc(100vw - 16px);
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--r-lg);
+  background: var(--navy);
+  color: var(--on-navy);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  text-align: left;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  overflow-y: auto;
+  pointer-events: none;
+}
+.net-tip[hidden] {
+  display: none;
+}
+/* WP-168c: the rich (i) bubble (components/rich-tip.js, line format util/rich-text.js): the button is the app's `.help-tip` with its own pseudo-element bubble switched off; the bubble is
+   a real element placed by script inside the window, as tall as the room there is, with an inner scroll. It stays open while the pointer is on it. */
+.rich-tip-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.help-tip.rich-tip-btn::after {
+  content: none;
+  display: none;
+}
+.rich-tip {
+  position: fixed;
+  z-index: 60;
+  width: 27rem;
+  max-width: calc(100vw - 16px);
+  padding: 0.6rem 0.85rem 0.7rem;
+  border-radius: var(--r-lg);
+  background: var(--navy);
+  color: var(--on-navy);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.45;
+  text-align: left;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--on-navy) 55%, transparent) transparent;
+}
+.rich-tip[hidden] {
+  display: none;
+}
+.rich-tip p {
+  margin: 0 0 0.55em;
+}
+.rich-tip-head {
+  margin: 0.9em 0 0.4em;
+  padding-top: 0.5em;
+  border-top: 1px solid color-mix(in srgb, var(--on-navy) 30%, transparent);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+.rich-tip ul,
+.rich-tip ol {
+  margin: 0 0 0.55em;
+  padding-left: 1.35em;
+}
+.rich-tip li {
+  margin: 0 0 0.35em;
+}
+.rich-tip strong {
+  font-weight: 700;
+}
+
+/* -- WP-141: the ranked list of the top-K task (components/ranked-list.js, logic in util/ranked.js) ----------------------------------------------------------------
+   It stands where the co-rated sub-matrix stands on the other pages (the heat panel's body scrolls: the head row sticks to its top, the strip with the numbers of the
+   step's row to its bottom). Type is in rem, so presenting mode (root 20 px) scales it with the rest of the page. A row is one line: the rank, the film (its name gives
+   way before its year: `.title-clamp`, WP-135), the score, the "seen" badge and the check of a relevant film - the last two columns exist only when the trace has them.
+   Nothing here changes size with a step: a row is shown or hidden (`display`), the strip is one reserved line. Text is --ink / --strong (>= 4.5 : 1 on the card in
+   both themes: --muted was 3.5 : 1); a fade (`is-below-cut`) keeps >= 4.5 : 1 too (opacity .7). */
+.ranked {
+  --rk-cols: 2.4em minmax(0, 1fr) 4.4em;
+  --rk-pad: 14px; /* the panel body's own padding is taken off (below), so the sticky head row and the strip reach its edges; the rows bring it back */
+  font-size: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ranked.has-seen {
+  --rk-cols: 2.4em minmax(0, 1fr) 4.4em 4.6em;
+}
+.ranked.has-relevance {
+  --rk-cols: 2.4em minmax(0, 1fr) 4.4em 3.8em;
+}
+.ranked.has-seen.has-relevance {
+  --rk-cols: 2.4em minmax(0, 1fr) 4.4em 4.6em 3.8em;
+}
+.ranked-caption {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  padding: 12px var(--rk-pad) 0;
+  margin-bottom: 6px;
+  color: var(--strong);
+}
+.ranked-lead {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 700;
+  color: var(--navy);
+}
+.ranked-threshold {
+  flex: none;
+  font-size: 0.92em;
+  color: var(--strong);
+}
+.ranked-note {
+  margin: 0 var(--rk-pad) 6px;
+  color: var(--strong);
+  line-height: 1.35;
+}
+.ranked-table {
+  min-width: 0;
+}
+.ranked-row {
+  display: grid;
+  grid-template-columns: var(--rk-cols);
+  align-items: center;
+  column-gap: 8px;
+  min-height: 2.1em;
+  padding: 0.15em var(--rk-pad);
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  transition: transform 0.35s ease;
+}
+.ranked-row.hidden-row {
+  display: none;
+}
+.ranked-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  min-height: 0;
+  padding-top: 0.3em;
+  padding-bottom: 0.3em;
+  background: var(--card);
+  border-bottom: 2px solid var(--line);
+  font-size: 0.92em;
+  font-weight: 700;
+  color: var(--strong);
+}
+.ranked-cell {
+  min-width: 0;
+}
+.ranked-cell.r-rank,
+.ranked-cell.r-score {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.ranked-cell.r-seen,
+.ranked-cell.r-rel {
+  text-align: center;
+}
+.ranked-cell.r-film {
+  display: flex;
+}
+.ranked-title {
+  flex: 0 1 auto;
+}
+/* the rank is "?" until the ranking step: the number stays in the cell (hidden), so the column keeps its width */
+.ranked .phase-cell {
+  position: relative;
+}
+.ranked .phase-cell.masked .cv {
+  visibility: hidden;
+}
+.ranked .phase-cell.masked::after {
+  content: "?";
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  color: var(--strong);
+}
+.ranked-row.is-focus {
+  background: color-mix(in srgb, var(--navy) 12%, var(--card));
+}
+.ranked-row.is-focus:not(.is-selected) {
+  font-weight: 700; /* (at the cut step every kept row is in focus: the bar says "kept", the bold would make the whole list heavy) */
+}
+/* the rows the cut keeps carry a bar at their left edge; once the cut is made the rest fades */
+.ranked-row.is-selected {
+  box-shadow: inset 3px 0 0 var(--navy);
+}
+.ranked-row.is-below-cut {
+  opacity: 0.7;
+}
+.ranked .ranked-seen {
+  color: var(--strong);
+  border: 1px solid var(--line);
+  background: var(--card);
+  font-size: 0.9em;
+  padding: 0 0.5em;
+}
+.ranked-cell.r-rel {
+  color: var(--strong);
+}
+.ranked-cell.r-rel.is-yes {
+  color: var(--ink);
+  font-weight: 700;
+}
+/* the line under the last row the cut keeps (K) */
+.ranked-cut {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.2em var(--rk-pad);
+  font-size: 0.92em;
+  font-weight: 700;
+  color: var(--navy);
+}
+.ranked-cut::before,
+.ranked-cut::after {
+  content: "";
+  flex: 1 1 auto;
+  border-top: 2px dashed var(--navy);
+}
+.ranked-cut::before {
+  flex: 0 0 1em;
+}
+.ranked-none {
+  margin: 8px var(--rk-pad);
+  color: var(--strong);
+}
+/* the numbers behind the score of the row the step is about (or the one under the pointer): ONE reserved line at the foot of the list, so no row moves with a step */
+.ranked-why {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  min-height: 1.4em;
+  padding: 0.45em var(--rk-pad) 0.35em;
+  background: var(--card);
+  border-top: 1px solid var(--line);
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ranked-why.is-hint {
+  color: var(--strong);
+}
+/* the panel that holds the list is as tall as the block allows from the first step: the rows appear as they are scored and the panel must not grow with them (it would push the
+   Formula and Code panels down); the body scrolls inside when the list is longer (K = 20) */
+.layout-f .area-heat:has(.ranked) {
+  height: calc(var(--blk-h) - 252px);
+}
+.layout-f .area-heat .panel-body:has(> .ranked) {
+  padding: 0;
+}
+
+/* -- WP-141: the factor panel in the top-K task (components/factor-panel.js): one row of scores, no target film -------------------------------------------------------
+   Before the scoring step the cells hold a "?" (the same size as a score: nothing moves); from the cut on the columns the list keeps are outlined with a bar at the top
+   and wear their rank in the cell's corner (`data-rank`), the film name in the head turns navy. The step's own highlight (`in-col`) still draws its two side bars. */
+.layout-f.has-training .area-heat .factors-body.is-topk .factor-scroll {
+  flex: 0 1 auto; /* one row: the grid is as tall as it, not stretched to the tab's height (the predict task's grid has rows to fill it) */
+}
+.factor-cell.is-dim,
+.factor-head-cell.is-dim {
+  opacity: 0.5; /* the films the step drops (the ones the user has rated): faded, like a validation rating */
+}
+.factor-cell.is-pending {
+  border: 1px dashed var(--navy);
+  background: var(--card);
+  color: var(--strong);
+  font-weight: 700;
+}
+.factor-cell.is-top {
+  position: relative;
+  box-shadow: inset 0 3px 0 var(--navy);
+  font-weight: 700;
+}
+.factor-cell.is-top[data-rank]::before {
+  content: "#" attr(data-rank);
+  position: absolute;
+  top: 4px;
+  left: 3px;
+  font-size: 0.72em;
+  font-weight: 700;
+  color: var(--navy);
+}
+.factor-head-cell.is-top .heat-head-text {
+  color: var(--navy);
+  font-weight: 700;
+}
+
+/* WP-224: the sentence under a training curve (how training ended, which epoch predicts) and the badge of a run that ended on its budget while still improving */
+.curve-caption {
+  margin: 0.25rem 0.5rem 0.35rem;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--strong);
+}
+/* WP-243: the feature page's second line under the chart - what the chart shows - quieter than the line that says how the run ended */
+.curve-caption.curve-reading {
+  margin-top: 0; /* the same ink as the line above (--muted is 3.5 : 1 on the card, too faint for text) */
+}
+/* WP-244: the third line - why the chart has no ids-only line (the trace says it with a code) - in the same ink */
+.curve-caption.curve-hint {
+  margin-top: 0;
+}
+.curve-caption .curve-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--amber-bg, #fff3cd);
+  color: var(--amber-ink, #6b4b00);
+  border: 1px solid var(--amber-line, #d9a300);
+}
+
+/* WP-223 / WP-224: labelled groups of the model pages' parameter form (the side inputs of the feature network, the training controls of both network pages) */
+.param-extra .param-group {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.4rem 0.9rem;
+  margin: 0.15rem 0 0;
+  padding: 0.3rem 0.6rem 0.5rem;
+  border: 1px solid var(--line, #d0d0d0);
+  border-radius: 6px;
+  min-width: 0;
+}
+.param-extra .param-group[hidden] {
+  display: none;
+}
+/* WP-243: the neural pages' three groups (Architecture, Side inputs, Training) are ONE grid style. Equal columns (150 px at least) shared by all three, so a field of one group stands over
+   the same x as the field of the next; a control fills its cell, a long one (the network type, the text lists, the row of input groups, the early-stopping switch) takes two or three cells
+   (`.param-span-n`); a field a choice hides leaves the grid to close up (nothing else moves), a disabled one (the patience while early stopping is off) keeps its cell. The groups stack
+   at the full width of the form, the legend's (i) opens the glossary of the group. */
+.param-extra .param-group.param-group-grid {
+  flex: 1 1 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  align-items: end;
+  gap: 8px 14px;
+  padding: 4px 10px 10px;
+}
+.param-extra .param-group.param-group-grid[hidden] {
+  display: none;
+}
+.param-group-grid > .param-field {
+  min-width: 0;
+}
+.param-group-grid > .param-field:not(.param-check) select,
+.param-group-grid > .param-field:not(.param-check) input[type="number"],
+.param-group-grid > .param-field:not(.param-check) input[type="text"] {
+  width: 100%;
+  max-width: none; /* trace.css caps a select at 170 px on the wrapping-row pages: here the select fills its cells, the long type name is read whole */
+  box-sizing: border-box;
+}
+.param-group-grid > .param-span-2 {
+  grid-column: span 2;
+}
+.param-group-grid > .param-span-3 {
+  grid-column: span 3;
+}
+.param-group-grid > .param-span-4 {
+  grid-column: span 4; /* the row of five input-group boxes: one line in both languages at the page's usual width */
+}
+@media (max-width: 520px) {
+  .param-group-grid > .param-span-2,
+  .param-group-grid > .param-span-3,
+  .param-group-grid > .param-span-4 {
+    grid-column: 1 / -1; /* a phone-width form has one or two columns: a wide field takes the row */
+  }
+}
+.param-group-grid > legend .rich-tip-wrap {
+  vertical-align: middle;
+  margin-left: 2px;
+}
+.param-group > legend {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--strong);
+  padding: 0 0.3rem;
+}
+.param-groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.7rem;
+}
+.param-check.is-foil > span {
+  color: var(--amber-ink, #6b4b00);
+}
+
+/* -- WP-244: the training-curve box of a trained page --------------------------------------------------------------------------------------------------------------------------------------
+   The box (`.curve-body`) clips what is under the chart (overflow hidden, the chart `height: 100%`): the stop sentence (every MF and neural page) and the reason a comparison is missing (the feature
+   page) were never in view, and Plotly's legend of four entries took one row each in the 270 px box. On a trained page (`.curve-column`, set by the trace page) the box is a column: a row of keys
+   (on the feature page with the (i) that says what the chart shows), the chart that takes what is left, then the stop sentence and - on the feature page, when there is no ids-only line - the reason. The keys are swatches in the chart's own hues (navy, maroon; the ids-only network's dashed and
+   faint, like its lines). Text is --strong (never the muted grey). */
+.layout-f.has-training .curve-body.curve-column { /* WP-244 */
+  display: flex;
+  flex-direction: column;
+}
+.layout-f.has-training .curve-body.curve-column .curve-host { /* WP-244 */
+  flex: 1 1 0;
+  height: auto;
+  min-height: 70px;
+}
+.layout-f.has-training .curve-body.curve-column .curve-caption { /* WP-244 */
+  flex: none;
+  margin: 0.15rem 0.25rem 0;
+}
+.curve-legend {
+  display: flex;
+  flex: none;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+  margin: 2px 2px 0;
+}
+.curve-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px 12px;
+  min-width: 0;
+  font-size: 0.7rem;
+  line-height: 1.35;
+  color: var(--strong);
+}
+.curve-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.curve-swatch {
+  display: inline-block;
+  width: 20px;
+  height: 0;
+  border-top: 2px solid var(--navy);
+}
+.curve-swatch.valid {
+  border-top-color: var(--maroon);
+}
+.curve-swatch.ids {
+  border-top-style: dashed;
+  opacity: 0.55;
+}
+.curve-swatch.ref {
+  border-top-color: var(--strong);
+  border-top-style: dashed;
+}

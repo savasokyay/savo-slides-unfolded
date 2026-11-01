@@ -1,0 +1,1008 @@
+/* WP-31: application shell (header, nav tree, layout) + shared component classes from
+   docs/UI_STYLE.md. Components not yet built (HeatGrid, FormulaPanel, Flowchart, ...) keep their
+   documented class names here so later work packages only add behaviour, not new tokens. */
+
+* {
+  box-sizing: border-box;
+}
+
+.app-shell {
+  --nav-w-wide: 260px; /* WP-177c: the expanded width, kept apart from --nav-w (which the rail overrides) because the rail lays the labels out at it - see "collapsed rail" below */
+  --nav-w: var(--nav-w-wide); /* WP-54: collapses to --nav-w-collapsed, see html.nav-collapsed below */
+  display: grid;
+  grid-template-rows: auto 1fr;
+  grid-template-columns: var(--nav-w) 1fr;
+  grid-template-areas: "header header" "nav main";
+  /* WP-54: a hard height (not min-height) is what makes the "nav" row a definite `1fr`, which is
+     what makes .nav-aside's and .main-content's own `overflow: auto` actually scroll internally
+     instead of the whole grid growing to fit whichever column has the tallest content - needed
+     for the sidebar's bottom-pinned collapse toggle + credit logo to land at the visible bottom
+     of the SIDEBAR, not the bottom of all page content. */
+  height: 100vh;
+  transition: grid-template-columns 0.2s ease;
+}
+
+/* WP-54: icon-only sidebar, more room for the main content (Q1/Q2/Q3 heatmaps, wide tables, ...).
+   The class lives on <html> (nav-collapse.js, same pattern as theme.js's data-theme) so it is
+   already set before first paint - no flash of the expanded width on load. */
+html.nav-collapsed .app-shell {
+  --nav-w: 56px;
+}
+
+/* -- header ------------------------------------------------------------------------------- */
+
+.header-bar {
+  grid-area: header;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  height: 56px;
+  background: var(--header-gradient);
+  color: #fff;
+  box-shadow: var(--shadow);
+}
+
+.header-bar .brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 16px;
+  white-space: nowrap;
+}
+
+/* WP-54a: vX.Y.<git commit count> (i2rs.app.build_version) next to the title, in main.js's
+   renderHeader() - smaller and lighter than the title text it's attached to. */
+.header-bar .brand .brand-version {
+  font-size: 11px;
+  font-weight: 400;
+  opacity: 0.75;
+}
+
+/* WP-93 / WP-93a: shown while the selected dataset displays real handles (ui.show_handles) on a page that can
+   print a name - a reminder not to share the screen; blends into the header like the other small controls.
+   The explanation is the shared help bubble (`.help-tip`, util/info-tip.js): only its size and place are set here.
+   WP-93b: no word in the strip - the badge is the "i" alone, in the same translucent pill (now a 20 px circle:
+   16 px button + 2 px each side, the height the text badge had), no warning colour. */
+.header-bar .handles-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  padding: 2px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  white-space: nowrap;
+}
+
+.header-bar .handles-badge .handles-tip {
+  width: 16px;
+  height: 16px;
+  font-size: 10px;
+}
+
+/* WP-96 / WP-99: a user's name (Letterboxd profile) or a film's title (Letterboxd / TMDB page) as a
+   link (util/user-link.js) - the label keeps its own
+   look wherever it sits (a table cell, a card list, a sentence); only hover / keyboard focus show it
+   is a link. A host's truncation class (.cohort-label, .card-list-name, .pf-title) rides along. */
+a.user-link,
+a.film-link {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+a.user-link:hover,
+a.user-link:focus-visible,
+a.film-link:hover,
+a.film-link:focus-visible {
+  color: var(--navy);
+  text-decoration: underline;
+}
+
+.header-bar .brand .logo {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--r);
+  background: rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  overflow: hidden;
+}
+
+/* WP-53: assets/app.ico, once the instructor drops it in - see main.js renderHeader() */
+.header-bar .brand .logo .logo-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.header-bar .spacer {
+  flex: 1;
+}
+
+.header-bar select {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: var(--r);
+  padding: 4px 8px;
+  font: inherit;
+  max-width: 260px;
+}
+
+/* WP-78: the dropdown's option list is painted by the browser on a light popup but inherited the
+   header's white text, so every entry except the highlighted one was invisible; give the options
+   the page's own ink and card colours (they follow the theme through the tokens). */
+.header-bar select option {
+  color: var(--ink);
+  background: var(--card);
+}
+
+/* WP-78: pages that do not read the dataset (the lecture boards - their doors carry their own
+   dataset) keep the selector in place, greyed, so the header never shifts between pages. */
+.header-bar select:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* -- segmented control (EN/TR, light/dark) ------------------------------------------------- */
+
+.seg {
+  display: inline-flex;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.seg button {
+  border: none;
+  background: transparent;
+  color: inherit;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.seg button.active {
+  background: #fff;
+  color: var(--navy);
+  font-weight: 700;
+}
+
+.header-bar .icon-btn {
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.header-bar .icon-btn[aria-pressed="true"] {
+  background: #fff;
+  color: var(--navy);
+}
+
+/* -- nav tree ------------------------------------------------------------------------------ */
+
+.nav-aside {
+  grid-area: nav;
+  background: var(--card);
+  border-right: 1px solid var(--line);
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+  /* WP-54: without this, a grid item that is ALSO a flex container ignores its grid-assigned
+     height (min-height defaults to `auto`, i.e. "as tall as my content wants") and grows past the
+     viewport instead of scrolling internally - the classic flex/grid nesting min-height trap. */
+  min-height: 0;
+}
+
+.nav-tree,
+.nav-tree ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-tree ul {
+  padding-left: 14px;
+  transition: padding-left 0.2s ease;
+}
+
+.nav-tree li {
+  margin: 0;
+}
+
+/* Not scoped under .nav-tree: the collapse toggle (nav-tree.js) carries this same class but sits
+   as .nav-tree's sibling, not its descendant, and WP-54a wants it styled identically. */
+.nav-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  color: var(--strong);
+  text-decoration: none;
+  font-size: 13px;
+  border-radius: var(--r);
+  cursor: pointer;
+  user-select: none;
+  width: 100%;
+  background: none;
+  border: none;
+  font: inherit;
+  text-align: left;
+}
+
+/* WP-54: the icon badge (config/nav.yaml `icon:` - the course's own uCF/iCF/DNN/... abbreviations)
+   never hides, so a collapsed rail stays as identifiable as the expanded tree. */
+.nav-tree .nav-icon,
+.nav-collapse-toggle .nav-icon {
+  flex-shrink: 0;
+  min-width: 26px;
+  text-align: center;
+  /* WP-74: emoji badges (config/nav.yaml) - colour glyphs, so no weight/spacing tricks; the
+     emoji font first so Windows/macOS/Linux all pick their colour set */
+  font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", var(--font);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--muted);
+  background: var(--surface);
+  border-radius: var(--r);
+  padding: 2px 3px;
+  line-height: 1.25;
+}
+
+/* WP-74: hierarchy by badge box colour - the collapsed rail hides labels AND indentation, so the
+   box tint is what still tells a group's child (depth-1) or grandchild (depth-2) from a top-level
+   page. Depth classes come from nav-tree.js; the tint is the navy accent mixed into the badge
+   surface, so it follows both themes. */
+.nav-tree .nav-row.depth-1 .nav-icon {
+  background: color-mix(in srgb, var(--navy) 14%, var(--surface));
+}
+
+.nav-tree .nav-row.depth-2 .nav-icon {
+  background: color-mix(in srgb, var(--navy) 28%, var(--surface));
+}
+
+.nav-tree .nav-row.active .nav-icon {
+  color: var(--navy);
+  box-shadow: inset 0 0 0 1.5px var(--navy); /* WP-74: the active page stays visible in the rail */
+}
+
+/* WP-82: a page the instructor has signed off (`done: true` in config/nav.yaml) wears the logo's
+   gold on its badge - a light gold for a top-level page, the inner bright gold for a page
+   inside a group (the RS tree, 2026-09-28). Tokens: tokens.css --gold-top / --gold-in.
+   WP-82 follow-up (user 2026-10-05): the top level was the bronze --gold-out, a dull brown on the dark
+   theme; it is now the LIGHTER of the two golds. */
+/* WP-162 (user 2026-10-12): the two tones SWAPPED - the top level wears the inner bright gold, the pages inside a group the
+   lighter gold, so the hierarchy reads dark -> light top-down (a trial the user asked for; the previous order is one swap away). */
+.nav-tree .nav-row.done .nav-icon {
+  background: var(--gold-in);
+}
+
+.nav-tree .nav-row.done.depth-1 .nav-icon,
+.nav-tree .nav-row.done.depth-2 .nav-icon {
+  background: var(--gold-top);
+}
+
+/* WP-82: a fixed group heading (`collapsible: false`) - no caret, no pointer, never folds */
+.nav-tree .nav-row.group.fixed {
+  cursor: default;
+}
+
+/* WP-231: a planned row (`planned: true` in config/nav.yaml): future work with no page - muted, no pointer, no hover tint, a quieter badge, never gold (it has no `done`).
+   Its label ends "(future work)" and its tooltip says what the idea is (nav-tree.js). */
+.nav-tree .nav-row.planned {
+  color: color-mix(in srgb, var(--strong) 50%, var(--muted)); /* quieter than a page row but readable: --muted alone is 3.5 : 1, below the app's small-text rule */
+  font-style: italic;
+  cursor: default;
+}
+
+.nav-tree .nav-row.planned:hover {
+  background: none;
+}
+
+.nav-tree .nav-row.planned .nav-icon {
+  opacity: 0.6;
+}
+
+/* WP-237a: a locked row (the students' edition shows it and does not open it; its badge is a lock and its tip says "Coming later"): muted like a planned row, no tint on hover, the
+   `not-allowed` pointer; roman type - it is a page that comes later, not an idea. It is a span with no href: nothing to click, nothing to focus. */
+.nav-tree .nav-row.locked {
+  color: color-mix(in srgb, var(--strong) 50%, var(--muted)); /* the planned row's ink: readable (--muted alone is 3.5 : 1) */
+  cursor: not-allowed;
+}
+
+.nav-tree .nav-row.locked:hover {
+  background: none;
+}
+
+.nav-tree .nav-row.locked .nav-icon {
+  opacity: 0.8;
+}
+
+.nav-tree .nav-label,
+.nav-collapse-toggle .nav-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transition:
+    opacity 0.15s ease,
+    max-width 0.2s ease;
+}
+
+/* WP-177b (the lead, 2026-10-16): a long label ("User profile (Rocchio)", "Kullanıcı profili (Rocchio)") wraps to a second line instead of ending in an ellipsis; a short
+   label is still one line, a third line would be clipped. The group headings (uppercase, short) and the collapse toggle keep their single line. */
+.nav-tree .nav-row:not(.group) .nav-label {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  white-space: normal;
+  min-width: 0;
+  line-height: 1.25;
+  /* WP-177d: see "wide label cap" below */
+  --nav-indent: 0px;
+  flex: none;
+  max-width: calc(var(--nav-w-wide) - 1px - var(--nav-indent) - 56px);
+}
+
+/* WP-177d (user, 2026-10-17, opening or closing the sidebar: "instead of simply sliding left and right a blink creeps in - first it grows taller, then suddenly narrows"): the nav tree is
+   rebuilt on every toggle (nav-tree.js) and the grid column then animates for 0.2 s (--nav-w, 56 -> 260 px). A wide-state label could shrink (flex-shrink 1, min-width 0), so it was laid
+   out at the aside's CURRENT width: at 56 px every multi-word label wrapped word by word into WP-177b's two lines - a 52 px row instead of 33.5 px, 13 of 20 rows on the first frame - and the
+   rows shrank back one by one as the column widened (settled after ~125 ms), the rows below sliding up by as much as 222 px. 177c fixed the rail's END state only. A wide label is now capped
+   at the width it has when the sidebar is fully open - the same sum the rail lays its labels out at, below - and does not shrink: its wrapping no longer depends on the animated width, the
+   aside clips what overflows (overflow-x: hidden), and a label narrower than the cap keeps its own width, so the wide sidebar is unchanged. The cap does not subtract the aside's vertical
+   scrollbar (15 px on a short window), so there a label gets a cap 15 px wider than its text column: a label that wraps keeps its row height (measured), and one whose single line is
+   189-203 px would stay on one line instead of wrapping (none is: the widest are 172 px in EN and 187 px in TR, against 188 px). */
+.nav-tree .nav-row.depth-1:not(.group) .nav-label {
+  --nav-indent: 14px;
+}
+.nav-tree .nav-row.depth-2:not(.group) .nav-label {
+  --nav-indent: 28px;
+}
+
+.nav-row:hover {
+  background: var(--surface);
+}
+
+.nav-tree .nav-row.active {
+  background: var(--surface);
+  color: var(--navy);
+  font-weight: 700;
+}
+
+.nav-tree .nav-row.group {
+  font-weight: 700;
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* WP-66: groups fold (nav-tree.js toggles li.collapsed and remembers it per group). The rule was
+   missing before - the JS toggle existed since WP-31 but no CSS ever hid the children. */
+.nav-tree li.collapsed > ul {
+  display: none;
+}
+
+.nav-tree .nav-caret {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--muted);
+  transition: transform 0.15s ease;
+}
+
+.nav-tree li:not(.collapsed) > .nav-row.group .nav-caret {
+  transform: rotate(90deg);
+}
+
+html.nav-collapsed .nav-tree .nav-caret {
+  display: none; /* icon-only rail: the badge alone marks the group; click still folds */
+}
+
+.nav-tree .nav-row.hidden-preview {
+  outline: 1px dashed var(--muted);
+  opacity: 0.75;
+}
+
+.nav-tree .lock-icon {
+  font-size: 11px;
+}
+
+.nav-hidden-toggle {
+  margin: 8px 12px;
+  font-size: 11px;
+  color: var(--muted);
+  background: none;
+  border: 1px dashed var(--line);
+  border-radius: var(--r);
+  padding: 4px 8px;
+  cursor: pointer;
+  width: calc(100% - 24px);
+}
+
+/* -- nav collapse (WP-54, revised WP-54a) ------------------------------------------------------
+   The toggle sits FIRST in the sidebar (nav-tree.js) - same .nav-row/:hover as every item below
+   it, no extra styling, so it reads as simply the top row of the menu. Its icon badge only earns
+   its keep once labels are hidden (collapsed rail); expanded, the label alone is plenty. The
+   credit logo stays bottom-pinned by .nav-spacer: the sidebar's own brand mark while expanded
+   (full width, prominent), shrinking back to a small credit icon in the collapsed rail. */
+
+.nav-collapse-toggle .nav-icon {
+  display: none;
+}
+
+html.nav-collapsed .nav-collapse-toggle .nav-icon {
+  display: inline-block;
+}
+
+.nav-collapse-toggle .nav-label {
+  font-size: 11px;
+  font-style: italic;
+}
+
+.nav-spacer {
+  flex: 1 0 16px; /* pushes the credit logo to the bottom, any content height above it */
+}
+
+.nav-credit-logo {
+  display: flex;
+  justify-content: center;
+  padding: 10px 14px 12px;
+}
+
+.nav-credit-logo img {
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  opacity: 0.92;
+  border-radius: var(--r);
+  transition:
+    opacity 0.15s ease,
+    width 0.2s ease;
+}
+
+.nav-credit-logo img:hover {
+  opacity: 1;
+}
+
+/* WP-237a: the students' edition's stamp under the credit logo ("v0.6 · rendered 2026-10-24 17:05"; nav-tree.js) and, when the tree it was rendered from had uncommitted changes, a small "preview
+   build" tag in the app's amber. Small type in the planned row's ink (readable); not drawn in the collapsed rail (no room for a sentence there). */
+.nav-publication-stamp {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  padding: 0 14px 10px;
+  font-size: 11px;
+  line-height: 1.3;
+  color: color-mix(in srgb, var(--strong) 50%, var(--muted));
+}
+
+.nav-stamp-preview {
+  padding: 0 7px;
+  border: 1px solid var(--amber-line);
+  border-radius: 999px;
+  background: var(--amber-bg);
+  color: var(--amber-ink);
+  cursor: help;
+}
+
+html.nav-collapsed .nav-publication-stamp {
+  display: none;
+}
+
+/* Collapsed rail: back to a small, subdued credit icon (matches the old WP-54 treatment). */
+html.nav-collapsed .nav-credit-logo {
+  padding: 8px 0 4px;
+}
+
+html.nav-collapsed .nav-credit-logo img {
+  width: 28px;
+  height: 28px;
+  opacity: 0.6;
+}
+
+html.nav-collapsed .nav-tree .nav-label,
+html.nav-collapsed .nav-collapse-toggle .nav-label {
+  opacity: 0;
+  max-width: 0;
+  pointer-events: none;
+}
+
+/* WP-177c (user, 2026-10-16: in the narrow sidebar the icon rows slide down, the spacing of the wide one is right - only a narrowing to the left): the rail hid a label with
+   `max-width: 0`, and WP-177b's two-line clamp then wrapped every multi-word label word by word into two lines - a 52 px row instead of the 33.5 px one, 228 px of drift by the last
+   page. The rail now lays each label out at the width it has in the WIDE sidebar (the row's width there: --nav-w-wide less the aside's 1 px border and the nesting of the
+   level - 14 px per level - less the row's two 12 px paddings, the 26 px icon and the 6 px gap), so it wraps - or does not - exactly as it does expanded and every row keeps its
+   height; the label stays invisible (opacity 0, no pointer events) and the aside clips what overflows (overflow-x: hidden). Measured in both languages: no row moves. */
+html.nav-collapsed .nav-tree .nav-row:not(.group) .nav-label {
+  --nav-indent: 0px;
+  flex: none;
+  max-width: none;
+  width: calc(var(--nav-w-wide) - 1px - var(--nav-indent) - 56px);
+}
+html.nav-collapsed .nav-tree .nav-row.depth-1:not(.group) .nav-label {
+  --nav-indent: 14px;
+}
+html.nav-collapsed .nav-tree .nav-row.depth-2:not(.group) .nav-label {
+  --nav-indent: 28px;
+}
+/* the toggle's own row: expanded it is its 11 px label alone (27 px); the rail adds the icon badge, which would make it 33.5 px and push every row below it down by 6.5 px - the badge
+   keeps its box but gives back 4 px above and below, so the label's height decides the row, as it does expanded */
+html.nav-collapsed .nav-collapse-toggle .nav-icon {
+  margin-block: -4px;
+}
+
+html.nav-collapsed .nav-tree ul {
+  padding-left: 0;
+}
+
+html.nav-collapsed .nav-hidden-toggle {
+  display: none; /* text-only control; expand the sidebar to manage hidden groups */
+}
+
+/* -- main / pages --------------------------------------------------------------------------- */
+
+.main-content {
+  grid-area: main;
+  padding: 20px;
+  overflow: auto;
+}
+
+.page-placeholder {
+  max-width: 640px;
+  margin: 40px auto;
+  text-align: center;
+  color: var(--muted);
+}
+
+.page-placeholder h2 {
+  color: var(--ink);
+}
+
+/* -- panels ----------------------------------------------------------------------------------- */
+
+.panel {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 16px;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--line);
+}
+
+.panel-head h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.panel-head .sub {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.panel-head .caret {
+  margin-left: auto;
+  transition: transform 0.15s;
+}
+
+.panel.collapsed .caret {
+  transform: rotate(-90deg);
+}
+
+.panel.collapsed .panel-body {
+  display: none;
+}
+
+.panel-body {
+  padding: 14px;
+}
+
+/* -- chips, pills, buttons -------------------------------------------------------------------- */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--strong);
+  font-size: 11px;
+  background: var(--surface);
+}
+
+.chip.on {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: var(--on-navy); /* WP-147: see .btn-primary */
+}
+
+.pill {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 10.5px;
+}
+
+.btn {
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: var(--r);
+  padding: 6px 14px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* WP-147: the ink on a --navy fill is --on-navy (tokens.css), never a literal white: white on the light theme's deep navy (13.24 : 1), the page's own dark ground on the dark
+   theme's periwinkle (7.18 : 1; the white that stood here was 2.49 : 1 there, on every page that has a primary button). The selected chip (.chip.on), the help bubble
+   (.help-tip::after) and the slide export button (slides.css) read the same token, so the notice of WP-146 needs no rule of its own. tests/app/test_on_navy_ink.py recomputes
+   it and fails for any new --navy fill that names another ink. */
+.btn-primary {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: var(--on-navy);
+}
+
+.btn-danger {
+  background: var(--amber-bg);
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.btn-sm {
+  padding: 3px 9px;
+  font-size: 11px;
+}
+
+.warn-banner {
+  background: var(--amber-bg);
+  border: 1px solid var(--amber-line);
+  color: var(--amber-ink);
+  border-radius: var(--r);
+  padding: 8px 12px;
+  font-size: 12px;
+}
+
+/* -- tables ------------------------------------------------------------------------------------ */
+
+table.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+table.data-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--card);
+  text-transform: uppercase;
+  font-size: 10.5px;
+  color: var(--muted);
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+/* WP-235: a head that must not be upper-cased - a Greek letter turns into its capital ("α" -> "Α", which reads as the Latin A; "β₀" -> "Β₀"), a name keeps its own case ("uCF" is not "UCF"):
+   the whole head (`th.keep-case`) or one part of it (a `.keep-case` span inside it) */
+table.data-table thead th.keep-case,
+table.data-table thead th .keep-case {
+  text-transform: none;
+}
+
+table.data-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+table.data-table td.num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* WP-105 (the instructor: "this problem is in many tables"): a numeric column's HEADER is aligned like its values. The head
+   rule above sets `text-align: left` for every th, and only `td.num` was right-aligned, so the header of a numeric column
+   sat at the left edge of a column whose numbers end at the right one (measured in the film sets: 34 px apart). Three pages
+   had patched it for their own table (exam.css, cohort.css, data.css); the shared table does it once. Same padding on th
+   and td, so the two edges coincide. */
+table.data-table thead th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* -- heat grid roles (used from WP-32 onward) --------------------------------------------------- */
+
+.hl-target {
+  outline: 2px solid var(--maroon);
+}
+
+.hl-active {
+  background: color-mix(in srgb, var(--navy) 12%, transparent);
+}
+
+.hl-corated {
+  background: color-mix(in srgb, var(--green) 16%, transparent);
+}
+
+.hl-excluded {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 4px,
+    var(--line) 4px,
+    var(--line) 5px
+  );
+  text-decoration: line-through;
+}
+
+.hl-dropped {
+  opacity: 0.45;
+}
+
+.hl-neighbor::after {
+  content: attr(data-rank);
+  font-size: 9px;
+  color: var(--navy);
+  margin-left: 4px;
+}
+
+/* -- flowchart (used from WP-32 onward) ---------------------------------------------------------- */
+
+/* WP-92: the `.flow-node` / `.flow-node.active` / `.flow-node.done` rules that stood here styled the node GROUP
+   (fill, stroke, stroke-width) and the label text inherited them - idle labels were outlined light grey (washed
+   out), the active one outlined navy 2 px (bold, cramped). The box is styled by `.flow-node-box` in trace.css and
+   a label has `stroke: none` there; nothing else used the group rules, so they are gone. */
+
+.flow-edge {
+  stroke: var(--muted);
+  fill: none;
+}
+
+/* -- formula panel (used from WP-32 onward) -------------------------------------------------------- */
+
+.formula-value {
+  color: var(--navy);
+  font-weight: 600;
+}
+
+/* -- presenting mode ------------------------------------------------------------------------------- */
+
+.presenting .nav-aside,
+.presenting .header-bar .brand .subtitle {
+  display: none;
+}
+
+.presenting {
+  font-size: 20px;
+}
+
+.presenting .app-shell {
+  grid-template-columns: 1fr;
+  grid-template-areas: "header" "main";
+}
+
+/* -- toast / modal ------------------------------------------------------------------------------- */
+
+.toast-stack {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 1000;
+}
+
+.toast {
+  background: var(--card);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  border-radius: var(--r);
+  padding: 8px 14px;
+  font-size: 13px;
+  max-width: 360px;
+}
+
+.toast.error {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: var(--card);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-md);
+  padding: 20px;
+  min-width: 260px;
+}
+
+.modal input[type="password"],
+.modal input[type="text"] {
+  font: inherit;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  width: 100%;
+  margin: 8px 0;
+}
+
+.modal .modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* -- code panel (used from WP-32 onward) --------------------------------------------------------- */
+
+.code-panel {
+  font-family: var(--mono);
+  font-size: 13px;
+  background: var(--surface);
+  border-radius: var(--r);
+  padding: 10px;
+  overflow-x: auto;
+}
+
+.code-panel .line.hl {
+  background: color-mix(in srgb, var(--navy) 14%, transparent);
+}
+
+/* -- help button (WP-82 on the RS-tree board, WP-95 8a on the Data page): ONE design, shared ----------------
+   A 20 px circle with an italic "i" and a navy CSS bubble whose text is `data-tip` (newlines kept), shown on hover
+   and keyboard focus. The bubble opens upwards and to the left by default (the RS-tree board's bottom-right corner);
+   `.tip-down` / `.tip-right` move it for a button that sits at the top-left of its text (util/info-tip.js sets them
+   and flips them near the viewport edge). Per-page rules place the button, never restyle it. */
+.help-tip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1;
+  cursor: help;
+  flex-shrink: 0;
+}
+
+.help-tip:hover,
+.help-tip:focus-visible {
+  color: var(--navy);
+  border-color: var(--navy);
+}
+
+.help-tip::after {
+  content: attr(data-tip);
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  width: 260px;
+  max-width: 70vw;
+  padding: 8px 10px;
+  border-radius: var(--r-lg);
+  background: var(--navy);
+  color: var(--on-navy); /* WP-147: see .btn-primary */
+  font: inherit;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: normal;
+  text-align: left;
+  text-transform: none;
+  white-space: pre-line;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+  z-index: 40;
+}
+
+.help-tip.tip-down::after {
+  top: calc(100% + 8px);
+  bottom: auto;
+}
+
+.help-tip.tip-right::after {
+  left: 0;
+  right: auto;
+}
+
+.help-tip:hover::after,
+.help-tip:focus-visible::after {
+  opacity: 1;
+}
+
+@media (max-width: 900px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+    grid-template-areas: "header" "main";
+  }
+
+  .nav-aside {
+    display: none;
+  }
+}
+
+/* -- shared component: the draggable column edge (components/col-resizer.js) ---------------------------------------------------------------------------------
+   Used by every page that makes a table's columns resizable (the Memory-based and the Model-based CF pages). It lived in memory.css and the second page relied on that
+   stylesheet being global; index.html loads this one for every page, so the rules are here (page-agent finding, moved by the ui-agent). */
+/* the draggable edge between two headings: 8 px wide, INSIDE the heading cell's right edge (a sticky heading cell is its own stacking layer:
+   a handle straddling the border would have its outer half covered by the next heading cell); a thin line shows it on hover / focus / drag */
+.col-resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 2;
+}
+.col-resizer::after {
+  content: "";
+  position: absolute;
+  top: 18%;
+  bottom: 18%;
+  left: 5px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--line);
+}
+.col-resizer:hover::after,
+.col-resizer:focus-visible::after,
+.col-resizer.dragging::after {
+  background: var(--navy);
+}
+.col-resizer:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: -2px;
+}

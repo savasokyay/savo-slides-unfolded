@@ -1,0 +1,143 @@
+/* WP-49: locked exam views (Q1/Q2 heatmaps, Q3 prediction list). Reuses .panel/.chip/.pill/.btn/
+   .data-table/.warn-banner/.param-form/.seg from app.css/trace.css; only the exam-specific layout
+   lives here. */
+
+.exam-page h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  color: var(--navy);
+}
+.exam-tabs {
+  margin-bottom: 10px;
+}
+.exam-content .panel {
+  margin-bottom: 12px;
+}
+.exam-heat {
+  margin: 10px 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.exam-heat:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+.exam-heat h4 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: var(--strong);
+}
+.exam-heat-fault {
+  border-left: 3px solid var(--red);
+  padding-left: 8px;
+}
+.exam-heatmap {
+  width: 100%;
+}
+.exam-results {
+  margin-top: 10px;
+}
+.exam-results h4 {
+  margin: 12px 0 6px;
+  font-size: 12px;
+  color: var(--strong);
+}
+.exam-results .chip {
+  margin-bottom: 8px;
+}
+.exam-file-note {
+  display: block;
+  font-size: 11px;
+  margin-top: 4px;
+}
+.exam-export-btn {
+  margin-top: 10px;
+}
+.exam-cfg {
+  font: inherit;
+  font-size: 12px;
+  font-family: ui-monospace, monospace;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--card);
+  color: var(--ink);
+  resize: vertical;
+}
+
+/* WP-84a: Q1's filter option (select, none | A | B triple, support map) and the Q4 table. */
+.exam-filter-row,
+.exam-q4-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  align-items: flex-start;
+  margin: 8px 0;
+}
+.exam-q4-user {
+  min-width: 280px;
+}
+.exam-filter select {
+  min-width: 200px;
+}
+.exam-triple {
+  margin: 14px 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.exam-triple > h4 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: var(--strong);
+}
+.exam-triple-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.exam-triple-grid .exam-heat {
+  margin: 0;
+  padding-top: 0;
+  border-top: none;
+  min-width: 0;
+}
+.exam-support {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.exam-export-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.exam-q4-note {
+  font-weight: 600;
+  margin: 4px 0 8px;
+}
+.exam-q4-summary {
+  margin: 8px 0;
+  font-size: 12px;
+}
+.exam-q4-summary .chip {
+  margin: 0 8px 0 0;
+}
+.exam-q4-table th,
+.exam-q4-table td {
+  white-space: nowrap;
+}
+.exam-q4-table .exam-degenerate {
+  margin-left: 6px;
+  font-size: 10px;
+}
+.exam-q4-table .exam-rank-moved {
+  font-weight: 700;
+  color: var(--maroon);
+}
+.exam-q4-foot {
+  margin: 6px 0;
+  font-size: 11px;
+}
+.exam-q4-table th.num {
+  text-align: right;
+}

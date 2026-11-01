@@ -1,0 +1,46 @@
+/* WP-65 (D-147), WP-79 (D-153): the intermission scene of the audience window: a glitch that settles into ONE thing, a big countdown in the middle of the screen. No mark, no message
+   line, no other text. Colours are tokens only (tests/js/chrome-css.test.mjs): the ground is the page theme's `--card` (the cover's navy, in both themes), the text is the dark token set
+   switched on by [data-surface="dark"] (the cover's way, themes.py theme_css), and the digits are `--title`, the cover's title colour, so contrast is that of the row `dark.title` on `card`
+   in config/themes/contrast.yaml (both themes).
+   The sheet draws the FINAL still frame (the digits). The glitch is overlays and clones that engine/presenter/intermission-fx.js adds, animates through the WAAPI layer
+   (core/animations.js) and removes when the last animation ends; under reduced motion they never exist.
+   Units: --u is one pixel of a 1920 x 1080 stage, scaled to the largest 16:9 box that fits the container (cqw/cqh resolve against .savo-im, the only size container). */
+
+.savo-im { position: absolute; inset: 0; z-index: 2147483000; overflow: hidden; container-type: size; display: grid; place-items: center; background: var(--card); pointer-events: none; user-select: none; }
+.savo-im-stage { --u: calc(min(100cqw, 100cqh * 16 / 9) / 1920); position: relative; width: calc(var(--u) * 1920); height: calc(var(--u) * 1080); overflow: hidden; color: var(--ink); font-family: var(--f-body); }
+.savo-im-comp, .savo-im-clone, .savo-im-lines { position: absolute; left: 0; top: 0; width: 100%; height: 100%; margin: 0; }
+.savo-im-comp, .savo-im-clone { display: grid; place-items: center; }
+.savo-im-clone { will-change: transform; }
+
+/* the final frame: the digits, centred on the stage in both directions. 500 stage pixels is the size of a short countdown ("09:41": 1330 wide, 343 tall); the module writes a smaller size inline
+   when the text is wider (an hour or more), so the line always fits. The box is trimmed to the cap height (the digits' ink), so the centre of the box is the centre of the number. Tabular
+   figures: every digit is the same width, so the number does not shift as it ticks. No letter-spacing: a trailing space would move the centre. */
+.savo-im-clock {
+  margin: 0; white-space: nowrap; text-align: center;
+  font-family: var(--f-title); font-weight: 700; font-size: calc(var(--u) * 500); line-height: 1; letter-spacing: 0; font-variant-numeric: tabular-nums;
+  text-box-trim: trim-both; text-box-edge: cap alphabetic; color: var(--title);
+}
+.savo-im-clock:empty { visibility: hidden; }
+/* WP-98 (D-172): while the lecturer has set no end the same line shows the WORD "intermission" (lower case, as the user wrote it) instead of digits: the module writes its own size inline (252.9 u: 1500 u wide, the
+   advances of Archivo 700 are 5.93 em), the box is the same cap-height box, so the word is centred as the number is. Tabular figures do nothing to letters. The text is never transformed: the dotted i of Turkish
+   would turn an English "i" into "İ" under text-transform, which is why the module tags the word with its own language. */
+.savo-im-word { text-transform: none; letter-spacing: 0; font-variant-numeric: normal; }
+
+/* plates: tinted copies of the number (the colour split / the misregistered print) */
+.savo-im-clone[data-ink="a"] { --plate: var(--section); }
+.savo-im-clone[data-ink="b"] { --plate: var(--ex); }
+.savo-im-clone[data-ink] { mix-blend-mode: screen; }
+.savo-im-clone[data-ink] .savo-im-clock { color: var(--plate); }
+/* the print variant screens its plates through a halftone: opaque dots (any opaque stop; the colour is irrelevant to a mask) on a 12 px grid */
+.savo-im[data-variant="print"] .savo-im-clone[data-ink] {
+  -webkit-mask: radial-gradient(circle at 50% 50%, var(--card) 0 40%, transparent 46%) 0 0 / calc(var(--u) * 12) calc(var(--u) * 12);
+  mask: radial-gradient(circle at 50% 50%, var(--card) 0 40%, transparent 46%) 0 0 / calc(var(--u) * 12) calc(var(--u) * 12);
+}
+
+/* scan lines over the picture (darker lines of the ground) and one bright bar that passes once. The bar is as tall as the stage and paints its line in its first 14 px, so a translateY in
+   percent of its own height (the keyframes) is a distance on the stage. */
+.savo-im-lines { background: repeating-linear-gradient(to bottom, transparent 0 calc(var(--u) * 3), color-mix(in srgb, var(--card) 62%, transparent) calc(var(--u) * 3) calc(var(--u) * 5)); }
+.savo-im-bar {
+  position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0;   /* invisible until its animation shows it, and again after it */
+  background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--section) 38%, transparent), transparent) 0 0 / 100% calc(var(--u) * 14) no-repeat;
+}

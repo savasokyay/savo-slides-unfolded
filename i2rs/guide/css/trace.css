@@ -1,0 +1,3613 @@
+/* WP-32: trace page, TracePlayer and panels (HeatGrid, FormulaPanel, CodePanel, Flowchart,
+   DataTable, Narration, controls). Tokens come from tokens.css; shell chrome lives in app.css. */
+
+.trace-page .trace-title {
+  margin: 0 0 8px;
+  font-size: 18px;
+  color: var(--navy);
+}
+
+.trace-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.trace-form input {
+  width: 120px;
+  font: inherit;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--card);
+  color: var(--ink);
+}
+
+.trace-summary {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.trace-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  grid-template-areas:
+    "narration narration"
+    "controls controls"
+    "heat flow"
+    "formula code"
+    "table table"
+    "pairsim pairsim";
+  gap: 12px;
+}
+
+.area-narration {
+  grid-area: narration;
+}
+.area-controls {
+  grid-area: controls;
+}
+.area-heat {
+  grid-area: heat;
+}
+.area-flow {
+  grid-area: flow;
+}
+.area-formula {
+  grid-area: formula;
+}
+.area-code {
+  grid-area: code;
+}
+.area-table {
+  grid-area: table;
+}
+
+.trace-panel {
+  margin-bottom: 0;
+  min-width: 0;
+}
+.trace-panel .panel-head {
+  cursor: default;
+}
+
+/* WP-92 / WP-92a: where the page has room (a 1920 projector, or a 1080p projector at Windows scale 125 % = a 1536 px
+   CSS viewport with the sidebar folded to icons) the flowchart gets a full-width row of its own below the sub-matrix,
+   formula and code, and flowchart.js lays it out left to right (it picks the orientation from the panel width: the
+   widest chart, iCF in Turkish, needs about 1300 px of panel). The sub-matrix keeps the left column over two rows,
+   formula and code stack on its right. Narrower pages keep the grid above; the MF / DNN pages repeat this in mf.css
+   (their own area lists). WP-92a: the condition is a CONTAINER query on the page's own width (`.trace-page`), not a
+   viewport media query - the viewport minus the sidebar is what the full-width row really gets, and the sidebar is
+   either 260 px or 56 px wide, so one viewport number could not serve both. */
+.trace-page {
+  container: trace-page / inline-size;
+}
+@container trace-page (min-width: 1400px) {
+  .trace-layout {
+    grid-template-areas:
+      "narration narration"
+      "controls controls"
+      "heat formula"
+      "heat code"
+      "flow flow"
+      "table table"
+      "pairsim pairsim";
+  }
+}
+
+@media (max-width: 1100px) {
+  .trace-layout {
+    grid-template-columns: 1fr;
+    grid-template-areas: "narration" "controls" "heat" "formula" "table" "code" "flow" "pairsim";
+  }
+}
+
+/* -- WP-105: layout F of the uCF / iCF pages ------------------------------------------------------------------------
+   Page: [player strip - sticky] / [block] / candidate table (the pair table is a tab of the sub-matrix panel). Block: the sub-matrix over formula | code at the
+   left, the flowchart as a narrow VERTICAL column at the right (two rows tall); the right column is at least 460 px - below
+   that the chart's node text drops under 12 px (measured: 460 px -> 12.2 px, 420 -> 11.0, 300 -> 8.6; natural 13 px needs
+   500-560). Sizes depend on the window, never on a step's content, so no step moves anything: the block is as tall as the
+   visible height allows (`--blk-h`: window - header 56 - page padding 40 - strip 72 - gaps 24), the sub-matrix row is as tall
+   as its rows (capped, then it scrolls inside), formula | code take what is left (at least 240 px, they scroll inside), the
+   flowchart column scrolls inside when its chart is taller than the block. The WP-92a container query above and the
+   MF / DNN / content grids are untouched: every rule here needs `.layout-f`. */
+.trace-layout.layout-f {
+  --strip-h: 72px;
+  --blk-h: clamp(560px, calc(100vh - 192px), 780px);
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: none;
+  /* page flow: strip -> block. The pair table is the sub-matrix panel's third tab (WP-105, WP-115 1) and the candidate table the
+     flowchart panel's second tab (WP-107): neither has an area of its own */
+  grid-template-areas: "strip" "block";
+}
+.layout-f .area-strip {
+  grid-area: strip;
+  position: sticky;
+  top: 0;
+  z-index: 6; /* above the panels it floats over, below the picker lists (20) and the help bubbles (40) */
+  height: var(--strip-h);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  /* WP-157a: a link that names a step scrolls the strip to the top of the page once (trace-page.js); the strip sticks 20 px below the scroll box's edge (the main area's own padding, app.css),
+     so without this margin it was scrolled to the edge, pushed down 20 px by its stickiness and lay over the first 7 - 8 px of what follows it (measured at 1100 px: the head of the sub-matrix panel
+     and the (i) in it: 7 px under the strip). The margin leaves the room, the strip lands where it sticks. */
+  scroll-margin-top: 20px;
+}
+.layout-f .trace-block {
+  grid-area: block;
+  display: grid;
+  height: var(--blk-h);
+  /* WP-107 (h): formula : code = 3 : 2 (the formula's long rows were the cramped ones; user 2026-10-05). The flowchart column keeps
+     the width it had on the 1536 px projector page, 467 px (a third of it): with the 460 px floor the Turkish uCF chart fell to 11.9 px
+     text (measured), under the 12 px rule; at 467 it is 12.1 as before. On a 1536 px page the left two share the rest as ~560 / ~374
+     px; wider pages give the extra to them, not to the chart; the sub-matrix over them spans both, as before.
+     WP-107 (h2): the 3 : 2 is the DEFAULT of a draggable divider (components/splitter.js sets `--fc-formula` / `--fc-code`, the shares
+     in percent as fr, on this grid); the flowchart column and the block's height are not touched by it. */
+  grid-template-columns: minmax(0, var(--fc-formula, 60fr)) minmax(0, var(--fc-code, 40fr)) minmax(467px, 1fr);
+  grid-template-rows: auto minmax(240px, 1fr);
+  grid-template-areas:
+    "heat heat flow"
+    "formula code flow";
+  gap: 12px;
+}
+.layout-f .area-heat {
+  max-height: calc(var(--blk-h) - 252px); /* 240 px for formula | code + the 12 px gap */
+}
+/* WP-152 / WP-154: the MF and the neural page's sub-matrix panel has a second tab, the factor matrices / the network diagram (they need room: the grid or the diagram scrolls inside), so the
+   panel is as tall as the block allows from the first step - the same height on both tabs and at every step (the ranked list's panel below does the same) */
+.layout-f .area-heat.has-panel-tabs {
+  height: calc(var(--blk-h) - 252px);
+}
+/* WP-107 (e2): the right column of the block - the flowchart over the candidate table, in ONE grid item that spans both rows (so it ends
+   where the Formula | Code row ends). The flowchart panel is `--flow-share` of the column minus the 12 px gap (set by the divider
+   between them, components/splitter.js; until the reader moves it, the chart's natural height capped so that the table keeps five
+   rows); a chart taller than its panel scrolls INSIDE (the panel body), the table takes what is left. */
+.layout-f .flow-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  min-height: 0;
+}
+.layout-f .flow-panel {
+  flex: none;
+  height: calc((100% - 12px) * var(--flow-share, 0.6));
+}
+.layout-f .flow-column .area-table {
+  flex: 1 1 0;
+  min-height: 0;
+}
+/* WP-245: the feature page's flowchart panel carries the Network as its second tab (Flowchart | Network; trace-page.js `buildPanelTabs(flow.box, ...)`). The diagram is drawn from the top down
+   and needs the right column's WHOLE height (the flowchart's own 60 % share left it 300 px: 0.55x text), so while the Network shows the panel takes the column (`.net-open` on the column) and
+   the epoch table steps aside - it is back with the flowchart, the tab the walk turns to for the training step. The Network's body lies over the flowchart's below the strip (like the
+   sub-matrix panel's second tab, `.area-heat .network-body`); the flowchart's own - / + group is for the flowchart only. */
+.layout-f .flow-panel.has-panel-tabs {
+  position: relative;
+}
+.layout-f .flow-panel.has-panel-tabs .panel-body[hidden],
+.layout-f .flow-panel.has-panel-tabs .network-body[hidden] {
+  display: none; /* the covered body (the rules below set `display`; they would win over the UA's [hidden]) */
+}
+.layout-f .flow-panel.has-panel-tabs .network-body {
+  position: absolute;
+  top: 40px; /* the tab strip's fixed height */
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 6px 10px 10px;
+  overflow: hidden;
+  background: var(--card);
+  border-radius: 0 0 var(--r-lg) var(--r-lg);
+}
+.layout-f .flow-panel.net-open .zoom-flow,
+.layout-f .flow-column.net-open .area-table,
+.layout-f .flow-column.net-open .splitter-y {
+  display: none;
+}
+.layout-f .flow-column.net-open .flow-panel {
+  height: 100%;
+}
+/* WP-107 (h2) / (e2): the draggable dividers (components/splitter.js). The handle is a child of the panel BEFORE the divider and sits in
+   the 12 px gap behind it (right: -10px / bottom: -10px puts its 8 px between 2 and 10 px past the panel's edge), so no script
+   positions it. Quiet by default (a short, thin line), navy on hover, focus and while dragging - the existing pattern of the
+   page's controls. */
+.layout-f .has-splitter {
+  position: relative;
+}
+.layout-f .splitter {
+  position: absolute;
+  z-index: 4;
+  touch-action: none;
+  outline: none;
+}
+.layout-f .splitter-x {
+  top: 0;
+  bottom: 0;
+  right: -10px;
+  width: 8px;
+  cursor: col-resize;
+}
+.layout-f .splitter-y {
+  left: 0;
+  right: 0;
+  bottom: -10px;
+  height: 8px;
+  cursor: row-resize;
+}
+.layout-f .splitter::after {
+  content: "";
+  position: absolute;
+  border-radius: 2px;
+  background: var(--muted); /* not --line: 1.2:1 on the page ground, the handle would not be found; --muted is ~3:1 / 8:1 */
+  transition: background 0.12s;
+}
+.layout-f .splitter-x::after {
+  top: calc(50% - 18px);
+  left: 3px;
+  width: 2px;
+  height: 36px;
+}
+.layout-f .splitter-y::after {
+  left: calc(50% - 18px);
+  top: 3px;
+  width: 36px;
+  height: 2px;
+}
+.layout-f .splitter:hover::after,
+.layout-f .splitter.dragging::after,
+.layout-f .splitter:focus-visible::after {
+  background: var(--navy);
+}
+.layout-f .splitter:focus-visible::after {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--navy) 35%, transparent);
+}
+.layout-f .trace-block .trace-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.layout-f .trace-block .panel-head {
+  flex: none; /* a head never shrinks when the body is taller than the panel */
+}
+.layout-f .trace-block .panel-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+.layout-f .area-table {
+  grid-area: table;
+}
+.presenting .trace-layout.layout-f {
+  --strip-h: 88px;
+  --blk-h: clamp(560px, calc(100vh - 208px), 820px);
+}
+
+/* the strip: the narration (phase, the step's sentence clamped to two lines - the full text is the tooltip - and the
+   step's numbers, which are never cut) at the left, the transport at the right, the progress as a 3 px line along the
+   bottom edge */
+.layout-f .strip-body {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 100%;
+  padding: 0 14px;
+}
+.strip-narration {
+  container-type: inline-size; /* WP-135: the unit `cqw` of the film chip's cap (below, `.chip-role-item`) is a share of THIS box */
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden; /* WP-145: nothing of the narration is ever drawn over the transport - what does not fit is clipped (a chip carries its full text as a title) */
+}
+.strip-narration-flow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.strip-narration .narration-top {
+  margin: 0;
+  flex: none;
+}
+.strip-narration .narration-text {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+.presenting .strip-narration .narration-text {
+  font-size: 18px;
+}
+/* WP-135: a sentence with two films or more (narration.js sets `is-clamped` and `--films`): every name is an inline box, a film's one takes at most its share of the
+   line (a little under 1 / films), so all the titles and the words between them fit the two lines the strip allows, and the "(Year)" that ends a title is never the
+   part that is cut (the name inside gives way: `.heat-title-name`). The full title is the hover title of the name. */
+.strip-narration .narration-text.is-clamped .title-clamp {
+  display: inline-flex;
+}
+.strip-narration .narration-text.is-clamped .title-clamp.role-item {
+  max-width: calc(94% / var(--films, 2));
+}
+.strip-narration .warn-banner {
+  flex: 0 1 auto;
+  max-width: 32%;
+  margin: 0;
+  padding: 2px 8px;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.strip-narration .status-strip {
+  flex: none;
+  flex-wrap: nowrap;
+}
+/* WP-145: the transport (the buttons, the step counter, the two selects: 470-580 px) never gives way, so what is left for the narration is the strip minus that - and on a
+   narrow strip it is less than the phase, a readable sentence and the step's chips side by side (measured: 357 px at a 1200 px window, the sentence 0 px wide, the chips drawn
+   over the buttons; the same in English and Turkish). Below 44 rem the chips drop UNDER the sentence (one line of chips, the sentence keeps its two); below 21 rem (336 px: the widest chip row of any step is 313 px) - where
+   the chips need two lines themselves - the sentence is one line (its full text is the hover title). The strip stays 72 px (88 px presenting): both layouts fit it. rem, so
+   presenting mode's larger root moves the breaks with the text. */
+@container (max-width: 44rem) {
+  .strip-narration-flow {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+  .strip-narration .status-strip {
+    flex: 0 0 100%;
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+}
+@container (max-width: 21rem) {
+  .strip-narration .narration-text {
+    -webkit-line-clamp: 1;
+  }
+  /* two lines of chips (17 px each instead of 20) and the phase tag fit the 70 px inside the strip with room above the 3 px progress line along its bottom edge */
+  .strip-narration-flow,
+  .strip-narration .status-strip {
+    row-gap: 3px;
+  }
+  .strip-narration .status-strip .chip {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+}
+.strip-controls {
+  flex: none;
+}
+.strip-controls .player-controls {
+  flex-wrap: nowrap;
+}
+.strip-controls .player-keys {
+  display: none;
+}
+.strip-controls .player-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  margin: 0;
+  border-radius: 0;
+}
+
+@media (max-width: 1100px) {
+  .trace-layout.layout-f .trace-block {
+    height: auto;
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+    grid-template-areas: "heat" "formula" "code" "flow";
+  }
+  .layout-f .area-heat {
+    max-height: 560px;
+  }
+  .layout-f .area-heat.has-panel-tabs {
+    height: 480px; /* WP-152: the block is one column of auto height here: a fixed panel for the factor tab to fill */
+  }
+  .layout-f .area-formula,
+  .layout-f .area-code,
+  .layout-f .flow-panel {
+    height: 360px;
+  }
+  .layout-f .flow-column {
+    display: block; /* one column: the flowchart and the table follow each other at their own heights */
+  }
+  .layout-f .flow-column.net-open .flow-panel {
+    height: 620px; /* WP-245: the feature page's Network tab: the vertical drawing needs the height (a percentage of an auto-height column is nothing) */
+  }
+  .layout-f .flow-column .area-table {
+    margin-top: 12px;
+    max-height: 360px;
+  }
+  .layout-f .splitter {
+    display: none; /* one column: there is nothing side by side to divide */
+  }
+}
+
+/* -- WP-105 / WP-106: the sub-matrix panel's tabs, the pair's film sets in the second tab, the role colours ---------------
+   The panel's head is a tab strip ("Co-rated sub-matrix" | "All similarities for this pair" | "Films of this pair"; iCF: "... item
+   pair" | the users of the item pair). The three bodies live in the panel and only one shows, so the panel keeps its size: the
+   matrix body stays in the layout (covered), the other two lie over it. The pair table keeps its neighbour picker and hint and
+   scrolls inside (pair-similarities.js); the film sets show their three lists side by side at the panel's full width
+   (pair-films.js `layout: "columns"`), each scrolling on its own. Role colours (tokens.css, WP-106):
+   users dark red, items blue - the selection chips of the two pickers, the names in the page title, the two ends and the rows
+   of the film sets (films are items, the raters of an item pair are users). Filter chips stay neutral. */
+.layout-f .area-heat .panel-body[hidden] {
+  display: none; /* a tab's body while another tab shows: no other rule may show it again */
+}
+.layout-f .area-heat {
+  position: relative; /* the other tabs' bodies lie over the first body, below the head */
+}
+.layout-f .area-heat .panel-body.is-covered {
+  visibility: hidden; /* the first body keeps its place (and so the panel its height) while another tab shows */
+}
+.layout-f .heat-tabs-head {
+  box-sizing: border-box;
+  height: 40px; /* fixed, so the films body below can start exactly at its bottom edge */
+  padding: 0 14px;
+  align-items: flex-end;
+}
+.heat-tabs {
+  display: flex;
+  gap: 18px;
+}
+.heat-tab {
+  padding: 10px 0 8px;
+  margin-bottom: -1px; /* the active tab's underline sits on the head's own bottom border */
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: var(--fw-heading, 600);
+  color: var(--strong);
+  cursor: pointer;
+}
+.heat-tab.active {
+  color: var(--navy);
+  border-bottom-color: var(--navy);
+}
+.heat-tabs[hidden] {
+  display: none; /* WP-176 (stage 4): the top-K view has a title in the tabs' place (the author rule `display: flex` would otherwise beat the attribute) */
+}
+.heat-tab-static {
+  cursor: default; /* WP-176 (stage 4): the head of the top-K view is a title in a tab's look, not a tab */
+}
+.heat-tab-static[hidden] {
+  display: none;
+}
+.heat-tab[aria-disabled="true"] {
+  color: var(--muted);
+  cursor: not-allowed;
+}
+.heat-tab:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: 2px;
+}
+.layout-f .area-heat .films-body,
+.layout-f .area-heat .sims-body,
+.layout-f .area-heat .factors-body,
+.layout-f .area-heat .network-body,
+.layout-f .area-heat .features-body,
+.layout-f .area-heat .tfidf-body,
+.layout-f .area-heat .fit-body,
+.layout-f .area-heat .profile-body {
+  position: absolute;
+  top: 40px; /* the tab strip's fixed height */
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--card);
+  border-radius: 0 0 var(--r-lg) var(--r-lg);
+}
+/* the pair table's body (pair-similarities.js): the neighbour picker and the hint keep their place, the table scrolls inside */
+.sims-host {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+}
+.sims-host > .pairsim-head,
+.sims-host > .sub {
+  flex: none;
+}
+.sims-host > .table-wrap {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+}
+/* WP-115 (2): a help bubble (`.help-tip::after`, app.css) is only faded out (`opacity: 0`), so it stays in the layout: the long bubble of the formula panel's (i) opens
+   downwards past the panel and made the page scroll ~79 px further than its content (an empty strip at the very bottom). While the button is neither hovered nor
+   focused its bubble is not laid out at all on layout F (the uCF / iCF pages); hovering shows it as before (without the 0.12 s fade). */
+.layout-f .help-tip:not(:hover):not(:focus-visible)::after {
+  display: none;
+}
+/* WP-107 (e2): the candidate table is its own panel under the flowchart (the flow column, below). The column is narrow (467 px), so
+   the table is made compact - small cell padding, no wrapping - and scrolls inside in both directions; its first column (the user,
+   the film) stays put under a horizontal scroll, its head row under a vertical one. No information is dropped. */
+.layout-f .area-table .panel-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 8px 10px 10px;
+}
+.layout-f .area-table .table-wrap {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+}
+.layout-f .area-table table.data-table {
+  font-size: calc(12px * var(--table-zoom, 1)); /* WP-107 (g2): the reader's size step (components/zoom-control.js on the panel) */
+}
+.layout-f .area-table table.data-table th,
+.layout-f .area-table table.data-table td {
+  padding: calc(4px * var(--table-zoom, 1)) calc(7px * var(--table-zoom, 1)); /* the row height scales with the text */
+  white-space: nowrap;
+}
+/* WP-115 (7): the status column is words, not a number - set in the head's size (10.5 px at 1.0x) so a long status ("w <= 0 (dropped)", "too few co-rated") takes less of the
+   column, and with no padding to its right: the next column is a right-aligned number, so another 7 px after the text only widens the gap. The "?" of a masked status stands
+   at the cell's LEFT padding (see `td.phase-cell:not(.num).masked::after`), which is unchanged. */
+/* WP-176 (stage 4): a text cell the table cuts with an ellipsis (the MMR table's "penalised by": a film title) - its full text is the hover text */
+.layout-f .area-table table.data-table td.clamp-cell {
+  max-width: calc(9.5rem * var(--table-zoom, 1));
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.layout-f .area-table table.data-table td.status-cell {
+  font-size: calc(10.5px * var(--table-zoom, 1));
+  padding-right: calc(2px * var(--table-zoom, 1));
+}
+/* the head row: its text scales too (10.5 px at 1.0x, the shared table's size) */
+.layout-f .area-table table.data-table thead th {
+  font-size: calc(10.5px * var(--table-zoom, 1));
+  z-index: 2;
+  white-space: normal; /* a long head ("common raters", "co-rated") wraps instead of widening a column of two-digit numbers */
+  line-height: 1.2;
+  vertical-align: bottom;
+}
+.layout-f .area-table table.data-table th:first-child,
+.layout-f .area-table table.data-table td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  max-width: calc(9.5rem * var(--table-zoom, 1));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: var(--card);
+  box-shadow: 1px 0 0 var(--line);
+}
+.layout-f .area-table table.data-table thead th:first-child {
+  z-index: 3; /* the corner stays above the head cells that slide under it */
+}
+.layout-f .area-table table.data-table tbody tr.focus td:first-child {
+  background: color-mix(in srgb, var(--navy) 12%, var(--card)); /* the row's tint, opaque: the cells that slide under must not show */
+}
+.films-body > .pairfilms {
+  flex: 1 1 0;
+  min-height: 0;
+}
+.pairfilms.pf-columns {
+  margin-top: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.pf-columns .pairfilms-legend,
+.pf-columns .pairfilms-counts {
+  flex: none;
+}
+.pf-cols {
+  flex: 1 1 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+.pf-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.pf-col-head {
+  flex: none;
+  margin: 0 0 4px;
+  font-size: var(--fs-label, 0.75rem);
+  font-weight: var(--fw-label, 500);
+  color: var(--strong);
+}
+.pf-col .pairfilms-flagsum {
+  flex: none;
+  margin-bottom: 4px;
+}
+.pf-col .pairfilms-list {
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: none; /* the column fills the panel; the list scrolls inside it */
+  overflow: auto;
+}
+.pf-col .pairfilms-table {
+  max-width: none;
+}
+/* the column heads are the two ends' NAMES (a pseudonym, a handle, a film title), not the letters A / B: never upper-cased
+   (a handle's case is part of it), cut with an ellipsis when long (the full name is the tooltip), and wide enough for a
+   pseudonym; the heading of an "only" list is the name in its role colour too */
+.pf-columns .pairfilms-table th.pf-who {
+  text-transform: none;
+  font-weight: var(--fw-label, 500);
+}
+.pf-columns .pairfilms-table col.pf-col-num {
+  width: 5.5rem;
+}
+.pf-columns .pairfilms-table col.pf-col-delta {
+  width: 2.6rem;
+}
+.pf-col-head {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* a row's data-quality flags (a film) / cohort pill (a user) sit right after the name, small, on the same line when there is
+   room - a row with nothing to say has no second line and no filler text */
+.pf-columns .pf-flags {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  margin: 0 0 0 6px;
+  vertical-align: baseline;
+}
+.pf-columns[data-kind="films"] .pf-title,
+.pf-columns[data-kind="raters"] .pf-who {
+  color: var(--c-item);
+}
+.pf-columns[data-kind="raters"] .pf-title,
+.pf-columns[data-kind="films"] .pf-who {
+  color: var(--c-user);
+}
+
+/* a name drawn in its role colour (util/user-link.js linkedText `roles`); a link keeps its hover colour */
+.role-user,
+a.user-link.role-user,
+a.film-link.role-user {
+  color: var(--c-user);
+}
+.role-item,
+a.user-link.role-item,
+a.film-link.role-item {
+  color: var(--c-item);
+}
+a.user-link.role-user:hover,
+a.user-link.role-user:focus-visible,
+a.film-link.role-user:hover,
+a.film-link.role-user:focus-visible,
+a.user-link.role-item:hover,
+a.user-link.role-item:focus-visible,
+a.film-link.role-item:hover,
+a.film-link.role-item:focus-visible {
+  color: var(--navy);
+}
+/* the selection chips of the two pickers: filled in the role colour (the text colour that clears 4.5:1 on it - white on the
+   light theme's colours, the surface colour on the dark theme's lighter ones) */
+.trace-selection [data-panel="user-picker"] .picker-current .chip {
+  background: var(--c-user);
+  border-color: var(--c-user);
+  color: #fff;
+}
+.trace-selection [data-panel="item-picker"] .picker-current .chip {
+  background: var(--c-item);
+  border-color: var(--c-item);
+  color: #fff;
+}
+[data-theme="dark"] .trace-selection .picker-current .chip {
+  color: var(--surface);
+}
+
+/* -- selection row: entity pickers + random pick + parameter form (WP-41) ------------------------- */
+
+/* WP-104: the title and the random-pick box share one row (the box at the right, one line tall).
+   WP-141a: the task switch takes the middle of the same row - the title at the left, the switch centred on the page, the box at the right, all three on the row's middle
+   line (the two side columns are equal, so the switch is centred to the pixel). `.trace-head` is the query container, `.trace-head-row` the grid inside it (a container's
+   own box cannot be restyled by its query). A head too narrow for three puts the switch on a second row under the title, at the left; the box keeps the right of the
+   first row. WP-176b: the break is what three columns need at the least - a side column of 385 px on each side of the switch (17.6 rem: 282 px, 352 px in presenting mode,
+   where the root is 20 px) and the two 16 px gaps: 800 px + 17.7 rem, 1083 px at the normal root, 1154 px presenting (it was 1110 px + 17.7 rem, a side column for the longest
+   title measured - 525 px English, 567 px Turkish - which left the 1536 px window, the usual classroom one, with the switch under the title). A side column holds the random box
+   (126-130 px in the top-K task, 273-352 px with the film picker) and the page's title: the content page's top-K titles (284-369 px) stay on one line at the break; the longer ones
+   (a model's "... top-K recommendations for <user>", the profile method's "score <user> -> <film>", the Turkish user-based title: 396-457 px) wrap to a second line in the narrowest
+   head - and the switch stays centred, to the pixel, on every width above the break (measured: 8 pages x 8 layouts x EN/TR, no overlap, no overflow). Below the break (1100 px: the head is 785 px, three
+   columns cannot fit on any page) the switch is on the second row, as before. Without a switch (an old server) the row is the two columns it always was. */
+.trace-head {
+  container: trace-head / inline-size;
+  margin-bottom: 8px;
+}
+.trace-head-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px 16px;
+}
+.trace-head .trace-title {
+  margin: 0;
+  grid-column: 1;
+  justify-self: start;
+  min-width: 0;
+}
+.trace-head .trace-task {
+  grid-column: 2;
+  justify-self: center;
+}
+.trace-head .trace-random {
+  grid-column: 3;
+  justify-self: end;
+  min-width: 0;
+}
+.trace-head-row:has(> .trace-task[hidden]) {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.trace-head-row:has(> .trace-task[hidden]) .trace-random {
+  grid-column: 2;
+}
+@container trace-head (max-width: calc(800px + 17.7rem)) {
+  .trace-head-row,
+  .trace-head-row:has(> .trace-task[hidden]) {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .trace-head .trace-random,
+  .trace-head-row:has(> .trace-task[hidden]) .trace-random {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .trace-head .trace-task {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: start;
+  }
+  /* WP-196: the box that holds the saved-walk icon (the content-based pages) is 31 px wider than it was, and the title beside it had ~30 px to spare at the 1100 px window (item
+     method: 422 px of 452; Turkish: 426 of 429 before the icon) - it wrapped, and the head grew by a line. Here the box stands on the switch's row instead, at the right (the
+     switch has the left, the row has the room: 250 px + 440 px + 16 px of 785), and the title has the whole first row. Two rows as before, the box one line tall. */
+  .trace-head-row:has(.random-saved):not(:has(> .trace-task[hidden])) .trace-title {
+    grid-column: 1 / -1;
+  }
+  .trace-head-row:has(.random-saved):not(:has(> .trace-task[hidden])) .trace-task {
+    grid-column: 1;
+  }
+  .trace-head-row:has(.random-saved):not(:has(> .trace-task[hidden])) .trace-random {
+    grid-row: 2;
+  }
+}
+.trace-random .panel-body {
+  padding: 3px 8px;
+}
+
+.trace-selection {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  margin-bottom: 12px;
+}
+.trace-selection .panel {
+  margin-bottom: 0;
+}
+.picker {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.picker-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+.picker input[type="search"] {
+  font: inherit;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--card);
+  color: var(--ink);
+  width: 100%;
+}
+.picker-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.picker-chips .chip {
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+}
+/* WP-104 (4): on the trace pages a FILTER chip is a toggle (aria-pressed, set by entity-picker.js), and must not look like
+   the selection chip (the filled navy pill, `.chip.on`, which names what is chosen): an outline pill with a mark at its
+   left - off: hollow circle, grey line; on: check mark, navy line on a light navy tint. The mark's box is the same size in
+   both states, so toggling does not move the chip next to it. */
+.trace-selection .picker-chips .chip {
+  gap: 5px;
+  background: transparent;
+  color: var(--strong);
+  border-color: var(--line);
+}
+.trace-selection .picker-chips .chip::before {
+  content: "";
+  flex: none;
+  box-sizing: border-box;
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  opacity: 0.55;
+}
+.trace-selection .picker-chips .chip[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--navy) 10%, var(--card));
+  border-color: var(--navy);
+  color: var(--navy);
+}
+.trace-selection .picker-chips .chip[aria-pressed="true"]::before {
+  content: "\2713";
+  width: 9px;
+  border: none;
+  opacity: 1;
+  font-size: 11px;
+  line-height: 1;
+  text-align: center;
+}
+.trace-selection .picker-chips .chip:hover {
+  border-color: var(--navy);
+}
+.picker-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  box-shadow: var(--shadow-md);
+  max-height: 320px;
+  overflow: auto;
+}
+.picker-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.picker-row:hover,
+.picker-row.active {
+  background: var(--surface);
+}
+.picker-row.muted {
+  color: var(--muted);
+  cursor: default;
+  font-size: 11px;
+}
+.picker-meta {
+  color: var(--muted);
+}
+/* WP-156: a film row of a picker that has a user chosen (live server): title | raters | the user's rating, fixed columns - the title at the left (it is the variable token and may wrap
+   inside its column), the counts right-aligned and tabular so they line up from row to row, the rating column's width reserved (4.5em) whether or not a row has a rating. A film the
+   user rated has a tinted row (tokens.css --picker-rated) and "★ 4.0" in ink. The raters count is --strong there: the muted grey is 3.1 : 1 on the tint. */
+.picker-row.has-rating {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 4.5em;
+  align-items: baseline;
+}
+.picker-row.has-rating .picker-meta {
+  color: var(--strong);
+  text-align: right;
+}
+.picker-rating {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--ink);
+}
+.picker-row.is-rated {
+  background: var(--picker-rated);
+}
+.picker-row.is-rated:hover,
+.picker-row.is-rated.active {
+  background: var(--picker-rated-hover);
+}
+.picker-current {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 24px;
+  font-size: 12px;
+}
+/* WP-104: on the trace pages the picker is label / search box / ONE line - the selection (chip + count) at the left,
+   the filter chips at the right; where the two do not fit on a line (a long film title) the filters drop to a line of
+   their own and the selection stays on top. The result list stays out of the flow (below the picker). */
+.trace-selection .picker {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+}
+.trace-selection .picker-label,
+.trace-selection .picker input[type="search"] {
+  flex: 1 0 100%;
+}
+.trace-selection .picker-current {
+  order: 3;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.trace-selection .picker-current .chip {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.trace-selection .picker-current .sub {
+  white-space: nowrap;
+}
+.trace-selection .picker-chips {
+  order: 4;
+  margin-left: auto;
+  flex: 0 1 auto;
+  justify-content: flex-end;
+}
+.random-pick {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.held-out {
+  font-size: 12px;
+  min-width: 0;
+}
+.random-pick .random-seed {
+  font-size: 10.5px;
+  color: var(--muted);
+  opacity: 0.7;
+  white-space: nowrap;
+}
+.random-pick .random-seed:empty {
+  display: none; /* nothing picked yet: no gap for it either */
+}
+/* the box is one line tall: the "not rated" notice is a slim banner here, not the 8 px padded block of the other pages */
+.random-pick .warn-banner {
+  padding: 3px 10px;
+}
+.random-pick .btn {
+  white-space: nowrap;
+}
+/* WP-192: the content-based page's switch "Only users with a saved walk" (components/saved-walks.js). WP-196: a disk icon on Random pick's own line, not a tick box with its words
+   on a second line (that line made the title row 16 px taller). A toggle button (`aria-pressed`) drawn like the picker's filter chips (`.trace-selection .picker-chips .chip`:
+   an outline, the light navy tint and the navy line when it is on), the icon itself faint and grey when off, in colour when on. Always there on that page (never added or removed
+   with the list), so nothing around it moves when the list arrives or the switch changes: its box is the same in both states. It is as tall as the button beside it (`align-self:
+   stretch`, so the line never grows) and sits 4 px from it (the line's 10 px gap less the 6 px margin). Px, like the button: presenting mode does not scale `.btn-sm` either.
+   A pick with nothing saved to draw from is greyed like the Parameters' Apply (aria-disabled: still focusable, its title says why). */
+.random-saved {
+  flex: none;
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  margin: 0 -6px 0 0;
+  padding: 0 4px;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--navy);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  cursor: pointer;
+}
+.random-saved-icon {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+.random-saved[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--navy) 10%, var(--card));
+  border-color: var(--navy);
+}
+.random-saved[aria-pressed="true"] .random-saved-icon {
+  filter: none;
+  opacity: 1;
+}
+.random-saved:hover {
+  border-color: var(--navy);
+}
+.random-pick .btn[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+/* WP-203: with the disk on, the span where the ordinary pick's seed stands reads the walk-through's counter "i/N": the same slot (nothing else moves), but a counter is information, not a
+   trace of the pick - it is the page's body colour at full strength, not the seed's faint grey (--muted is 3.5 : 1 on the card), in px like the seed beside it */
+.random-pick .random-seed.is-counter {
+  min-width: 5ch; /* "10/10": the counter's width does not change from "9/10" to "10/10" (tabular figures), so the held-out chip beside it stays put through two-digit counts */
+  font-size: 11px;
+  color: var(--strong);
+  opacity: 1;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+/* WP-203: the disk icon's bubble - the rich (i) bubble's look (css/mf.css `.rich-tip`: the navy card, placed by script inside the window) with a list of what is saved, one row per form. The
+   list is a table of a fixed column order: the fields on the left, the numbers right-aligned in their own columns (tabular figures) so the same figure of two rows stands at the same x. The
+   marker column holds a small triangle beside the form on screen, whose row is also bold. No scroll box: the list is cut at a number of rows ("+n more"), the fields of a row at three ("+k"). */
+.saved-inventory {
+  width: 24rem;
+}
+.saved-inventory p {
+  margin: 0 0 0.5em;
+}
+.saved-inv-head {
+  margin: 0 0 0.3em;
+  font-weight: 700;
+}
+.saved-inv-total {
+  margin: 0.2em 0 0.35em;
+  padding-top: 0.45em;
+  border-top: 1px solid color-mix(in srgb, var(--on-navy) 30%, transparent);
+  font-weight: 700;
+}
+.saved-inventory .saved-inv-note {
+  margin: 0.35em 0 0;
+  font-size: 0.78rem;
+  opacity: 0.9;
+}
+.saved-inv {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+.saved-inv th {
+  padding: 0 0.6em 0.2em 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--on-navy) 30%, transparent);
+  text-align: left;
+  font-weight: 600;
+}
+.saved-inv td {
+  padding: 0.15em 0.6em 0.15em 0;
+  vertical-align: top;
+}
+.saved-inv .saved-inv-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.saved-inv-mark {
+  width: 1em;
+  padding-right: 0.2em;
+}
+.saved-inv tr.is-current td {
+  font-weight: 700;
+}
+/* WP-203: the note in the Parameters head ("form loaded from saved walk"): the picker chips' look (the light navy tint and the navy line), in the room of the hint that says why Apply waits (so it
+   moves nothing and the head keeps its height: the hint is 23 px tall, the chip 19 px) */
+.param-hint .param-note-chip {
+  display: inline-block;
+  box-sizing: border-box;
+  height: 19px;
+  margin-top: 2px;
+  padding: 0 8px;
+  border: 1px solid var(--navy);
+  border-radius: var(--r);
+  background: color-mix(in srgb, var(--navy) 10%, var(--card));
+  color: var(--navy);
+  font-size: 11px;
+  line-height: 17px;
+  vertical-align: top;
+}
+
+.param-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+/* WP-242: the "Data" row, first in the Parameters panel (components/data-row.js): a caption and one read-only line - what the page trained, validated and tested on. The caption is the panel's own
+   (11 px, upper case, bold, the muted ink of `.param-field`), the line is the controls' ink at their 12 px; the hover tip names the settings behind the shares. `.param-form` is a column, so the row is a line above the grid. */
+.data-row {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 11px;
+  color: var(--muted);
+  cursor: help;
+}
+.data-row[hidden] {
+  display: none; /* `display: flex` above would beat the attribute */
+}
+.data-row-label {
+  flex: none;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.data-row-text {
+  font-size: 12px;
+  color: var(--ink);
+}
+.param-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px 14px;
+}
+.param-field[hidden] {
+  display: none; /* WP-195c stage 2: a field a choice makes meaningless (the ridge penalty on the small network) - the author's `display: flex` below would otherwise beat the attribute */
+}
+.param-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.param-field > span {
+  text-transform: uppercase;
+  font-weight: 700;
+}
+/* WP-144: the text boxes share the control style. The group named `select` and `input[type="number"]` only, so the neural page's "hidden layers" box (and the Metrics page's
+   cut-off list) kept the browser's own text-box look - Arial 13.3 px, a 2 px inset border, 1 px 2 px padding - beside the 12 px, 1 px-bordered, 4 px 8 px padded others. */
+.param-field select,
+.param-field input[type="number"],
+.param-field input[type="text"] {
+  font: inherit;
+  font-size: 12px;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 4px 8px;
+}
+.param-check {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+.param-check > span {
+  text-transform: none;
+  font-weight: 400;
+  color: var(--ink);
+  font-size: 12px;
+}
+.param-actions {
+  display: flex;
+  gap: 8px;
+}
+.miniseg {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  overflow: hidden;
+  /* WP-133: the control is as wide as its buttons. Inside a column-flex field (`.param-field`) or a grid cell an `inline-flex` is blockified and
+     STRETCHED to the caption's width - the buttons do not grow, so the pressed (navy / red) last button ended up to 27 px short of the rounded
+     edge with a blank tail behind it (measured: "Centring (adjusted cosine)", 163.8 px field, 136.2 px of buttons). */
+  width: fit-content;
+  max-width: 100%;
+}
+.miniseg button {
+  border: none;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 11px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+.miniseg button + button {
+  border-left: 1px solid var(--line);
+}
+.miniseg button.active {
+  background: var(--navy);
+  color: #fff;
+}
+/* WP-42: the centring switch is inert unless the similarity is the adjusted cosine */
+.miniseg.disabled {
+  opacity: 0.45;
+}
+.miniseg button:disabled {
+  cursor: not-allowed;
+}
+/* WP-109 (6): dynamic and static are the same number when the active user has not rated the target. The twin that is not selected
+   looks selected - the same navy and white text, so both read as available - and carries a dashed inner edge: "equal, not chosen". */
+.miniseg button.equivalent {
+  background: var(--navy);
+  color: #fff;
+  outline: 1px dashed rgba(255, 255, 255, 0.8);
+  outline-offset: -3px;
+}
+/* WP-133a: on the dark theme --navy is the light periwinkle #8c9eff (it is the ground of the pressed choice), and white on it is 2.49 : 1. The
+   pressed choice - and the "equivalent" twin, drawn like it - carry the dark ground colour instead (7.2 : 1), the twin's dashed edge the same
+   colour so it stays visible on the light fill. The light theme keeps white on the deep navy (13.2 : 1). The fault button (below) has its own ink. */
+[data-theme="dark"] .miniseg button.active,
+[data-theme="dark"] .miniseg button.equivalent {
+  color: var(--surface);
+}
+[data-theme="dark"] .miniseg button.equivalent {
+  outline-color: color-mix(in srgb, var(--surface) 80%, transparent);
+}
+/* WP-133: the choice that IS the lesson's deliberate mistake (the item-mean centring) pulses red for as long as it is the pressed choice, so the
+   room cannot miss that the error is on. The base background is the static red - what reduced motion and a switched-off control show - and the
+   animation only moves it between the two reds of tokens.css (`--fault-a` <-> `--fault-b`, ink `--fault-ink` at both ends, each >= 4.5 : 1).
+   The summary chip and the pitfall band keep their own static red: the pulse is the button's alone. `.presenting` needs no rule of its own. */
+.miniseg button.is-fault.active {
+  background: var(--fault-a);
+  color: var(--fault-ink);
+  animation: miniseg-fault-pulse 1.2s ease-in-out infinite alternate;
+}
+.miniseg.disabled button.is-fault.active {
+  animation: none; /* the whole control is switched off (the centring is inert under this measure): a fault that changes nothing does not blink */
+}
+@keyframes miniseg-fault-pulse {
+  from {
+    background-color: var(--fault-a);
+  }
+  to {
+    background-color: var(--fault-b);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .miniseg button.is-fault.active {
+    animation: none; /* tokens.css switches every animation off already; stated here so the static red is read next to the rule */
+  }
+}
+/* WP-109 (9): the user- / item-based pages lay the fields out as one wrapping row of natural widths (a number box is as wide as its
+   number); the two check boxes stand on top of each other right after the denominator; the item-based and filter fields form a block
+   under it. The other pages (content, MF, DNN) keep the even grid above. */
+.param-grid.param-grid-knn {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px 14px;
+}
+.param-grid-knn .param-field {
+  flex: 0 0 auto;
+}
+.param-grid-knn .param-field[hidden] {
+  display: none; /* the cosine's norms choice while another measure is chosen (this file's `display: flex` would win over the UA's [hidden]) */
+}
+.param-grid-knn .param-field input[type="number"] {
+  width: 72px;
+}
+.param-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px; /* WP-109 (10): no `margin-left: auto` any more - the boxes stand next to the denominator (the row's gap), the free space is at its end */
+}
+.param-stack .param-check > span {
+  white-space: nowrap;
+}
+/* Apply / Defaults in the panel head, beside the title */
+.param-head-actions {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+}
+/* WP-176d: the sentence that says why Apply waits (no field ticked, every ticked weight 0), in the panel head right after Apply / Defaults. It takes the head's free room (`flex: 1 1 0`; the
+   held-out setting and the caret, which used to take it by `margin-left: auto`, still end at the far right), is exactly as tall as the buttons (23 px) whatever it says, and is empty while
+   Apply is free - so it moves nothing and the head's height never changes. A long sentence in a narrow head ends in an ellipsis (its title has the whole of it). */
+.param-hint {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 23px;
+  line-height: 23px;
+  font-size: 11px;
+  color: var(--strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* WP-110 (a'): the (i) at the end of a caption: not upper-cased (the caption's text-transform would turn the "i" into "I") */
+.param-field > span .help-tip {
+  text-transform: none;
+  margin: -4px 0 -4px 6px; /* the 20 px button must not make the 11 px caption line taller (the row would grow by 5 px) */
+  vertical-align: middle;
+}
+/* WP-110: a control and its (i) on one line; the slot keeps its width when a measure has no text, so nothing moves */
+.param-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.param-info-slot {
+  display: inline-flex;
+  min-width: 18px;
+}
+.param-grid-knn .param-field select {
+  max-width: 170px; /* the longest measure name would make the selector wider than its row needs; the list itself opens at full width */
+}
+/* WP-110 (a): one switched-off chip (the co-rated-only chip under a measure without a user centre): faded, not clickable, its tip still readable */
+.miniseg:not(.disabled) button[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.miniseg.disabled button[aria-disabled="true"] {
+  cursor: not-allowed; /* the whole group is already faded (item-based page: the convention is irrelevant for this measure) */
+}
+/* WP-109 (8): a chip is its word with the parenthesis small under it: two lines at most */
+.miniseg button {
+  line-height: 1.25;
+}
+.miniseg button > span {
+  display: block;
+  white-space: nowrap;
+}
+.miniseg button > small {
+  display: block;
+  font-size: 9.5px;
+  font-weight: 400;
+}
+/* WP-109 (3): the captions n and k are lower-case symbols (as in the formula and the flowchart); the other captions stay upper case */
+.param-field > span.keep-case {
+  text-transform: none;
+}
+.param-form .param-note {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+}
+/* WP-176: the content page's fields - a check box and a weight for each, in one wrapping row under the first row of controls (the item-based page's filter block is the
+   precedent). A ticked field is the navy tint of the app's chips; an unticked one keeps its weight box (disabled, at reserved width: nothing moves when a box is ticked). */
+.param-fields {
+  flex: 1 1 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.param-fields-caption {
+  text-transform: uppercase;
+  font-weight: 700;
+}
+/* WP-176c: the master box shares the caption's line - a 12 px box with no margin and the same 11 px text, so the line is as tall as the caption alone (15 px) and the chips under it
+   do not move, whichever state the box is in (checked, the square, unchecked) */
+.param-fields-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.param-fields-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+.param-fields-all input[type="checkbox"] {
+  width: 12px;
+  height: 12px;
+  margin: 0;
+}
+/* WP-176c: Apply while no field is ticked - the same faded, not clickable, tip-readable look as WP-110's switched-off chip */
+.param-actions .btn[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.param-fieldchips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.param-fieldchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 6px 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 12px;
+}
+.param-fieldchip.is-on {
+  border-color: var(--navy);
+  background: color-mix(in srgb, var(--navy) 10%, var(--card));
+}
+.param-fieldchip input[type="number"] {
+  width: 46px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 1px 4px;
+}
+.param-fieldchip input[type="number"]:disabled {
+  opacity: 0.45;
+}
+/* WP-176 (stage 2): the content page's two extra tabs of the sub-matrix panel (`.tfidf-body` / `.profile-body` lie over the matrix body like the factor / network bodies; the
+   head group `.profile-head-slot` holds the tab's (i), mf.css): the TF-IDF table fills its tab; the taste profile is the profile view (two rows over the target's terms) on top at its own
+   height and the table that explains its score under it, which takes the rest and scrolls inside. The signed cells of that table are the centred diverging tint of the sub-matrix's
+   centred cells (`.heat-cell.is-neg` / `.is-pos`); the figure carries the sign, so the colour is not the only cue. */
+.layout-f .area-heat .profile-body,
+.layout-f .area-heat .features-body,
+.layout-f .area-heat .fit-body,
+.layout-f .area-heat .tfidf-body {
+  padding: 6px 10px 10px;
+  gap: 8px;
+}
+/* WP-199: the small network's Network tab (components/network-panel.js: the neural page's own diagram, here in the tab body itself). Its padding is what the neural page's `.network-body` has
+   (mf.css, scoped to `.has-training`, which the content page is not); the scroll box, the drawing and the footer are mf.css's `.network-scroll` / `.network-svg` / `.heat-note` rules. */
+.layout-f:not(.has-training) .area-heat .network-body {
+  padding: 6px 10px 10px;
+}
+/* WP-195c: the per-user content model's Fit tab (components/cb-fit.js): the kind of model as a small heading and the numbers of the fit as a two-column list - the name in the strong
+   text colour, the figure tabular. All in rem, so presenting mode scales it with the page; the body scrolls inside when a narrow window cannot hold it. */
+.fit-host {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+}
+.cb-fit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.25rem 0.25rem 0.5rem;
+}
+.cb-fit-kind {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--strong);
+}
+.cb-fit-list {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.25rem 1rem;
+  margin: 0;
+  font-size: 0.75rem;
+}
+.cb-fit-label {
+  color: var(--strong);
+}
+.cb-fit-value {
+  margin: 0;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.cb-fit-note {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--strong);
+}
+/* WP-195c stage 2: the small network's Fit tab - the summary at the left of the training curve (the DNN page's curve panel: the training RMSE after each epoch), the epochs table under both
+   (every row, scrolling inside). The tab's box is the heat panel's fixed one and its height follows the window (310 px at a 755 px window, 456 px at 900): the table takes what the top
+   row leaves and never less than 8 rem (a header with no row under it is worse than a scroll) - a window too short for all three scrolls the tab itself; all in rem, so presenting mode
+   scales the rows and the curve's box with the page (the chart's own text is the curve panel's px). */
+.fit-host.is-network {
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+.cb-fit-network {
+  flex: 1 0 auto;
+  padding-bottom: 0.25rem;
+}
+.cb-fit-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 0.75rem;
+  flex: 0 0 auto;
+  min-width: 0;
+}
+.cb-fit-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.cb-fit-network .cb-fit-list {
+  grid-template-columns: minmax(0, max-content) max-content; /* a long caption wraps, the figures ("0.7426 → 0.4094") never do */
+  justify-content: start;
+}
+.cb-fit-network .cb-fit-value {
+  white-space: nowrap;
+}
+.cb-fit-curve {
+  position: relative;
+  min-width: 0;
+  min-height: 11.5rem;
+}
+.cb-fit-curve .curve-host {
+  position: absolute;
+  inset: 0;
+  min-height: 0; /* the standalone chart's 250 px (mf.css) is not this box's */
+}
+.cb-fit-epochs {
+  flex: 1 1 0;
+  min-height: 8rem;
+  display: flex;
+  flex-direction: column;
+}
+.cb-fit-epochs .table-wrap {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+}
+.profile-grid-host {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+.profile-table-host,
+.features-table-host,
+.tfidf-table-host {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.profile-table-host .table-wrap,
+.features-table-host .table-wrap,
+.tfidf-table-host .table-wrap {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: auto;
+}
+/* WP-176 (stage 3): the lower-right table's strip - the content page's three tables of the similarity walk (candidates | per field | prediction shares) in the title row of the table,
+   in the title's own size (12 px / 700) with the underline of the heat panel's tabs; the active one is navy, the others the text colour (the muted grey is 3.5:1 on the card) */
+.table-tabs {
+  display: flex;
+  gap: 14px;
+  min-width: 0;
+}
+.table-tab {
+  padding: 0 0 1px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font: inherit;
+  color: var(--strong);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.table-tab[hidden] {
+  display: none; /* the trace has no such table */
+}
+.table-tab.active {
+  color: var(--navy);
+  border-bottom-color: var(--navy);
+}
+.table-tab:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: 2px;
+}
+/* the user's row of the taste-profile view: the name, then what the row IS in the small tone of a note (the app's word for it, not the engine's) */
+.heat-row-sub {
+  margin-left: 0.4em;
+  font-size: 0.8em;
+  font-weight: 400;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.data-table td.sign-cell {
+  background: color-mix(in srgb, var(--div-pole, var(--div-mid)) calc(var(--t, 0) * 100%), var(--div-mid));
+  color: var(--ink);
+}
+.data-table td.sign-cell.is-neg {
+  --div-pole: var(--div-neg);
+}
+.data-table td.sign-cell.is-pos {
+  --div-pole: var(--div-pos);
+}
+.trace-summary .chip .pill {
+  margin-left: 6px;
+}
+/* WP-176a (b): the content page's card of the film's own numbers (runtime, year, the vote figures ...): ONE element in the summary bar, among the coverage chips, that wraps inside itself
+   (a pill's 999 px radius would turn a two-line card into a blob) and never wider than the bar; a key is muted, its number is the strong ink. The hover sentence says they are not
+   in the similarity. */
+.trace-summary .chip.numeric-card {
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  max-width: 100%;
+  border-radius: 10px;
+}
+.numeric-card .numeric-title {
+  font-weight: 600;
+}
+.numeric-card .numeric-key {
+  color: var(--muted);
+  margin-right: 4px;
+}
+.numeric-card .numeric-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.area-pairsim {
+  grid-area: pairsim;
+}
+.pairsim-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+}
+/* WP-114: "Neighbour: <name> · 12 co-rated films" and its (i) on one line; the table is as wide as its two columns, so the value stands right
+   next to the measure's name instead of at the far right of the panel */
+.pairsim-count {
+  color: var(--strong);
+  white-space: nowrap;
+}
+.sims-host table.data-table {
+  width: auto;
+}
+.sims-host table.data-table td:first-child {
+  padding-right: 28px;
+}
+.pairsim-head select {
+  font: inherit;
+  font-size: 12px;
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--card);
+  color: var(--ink);
+}
+/* WP-91: the pair explorer's film block (pair-films.js) - hosts: the uCF pair panel, the Users card.
+   Token colours only; the flag text carries the meaning, the amber tint only supports it. */
+.pairfilms {
+  margin-top: 16px;
+}
+.pairfilms[hidden] {
+  display: none;
+}
+.pairfilms-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.pairfilms-head h4 {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: 13px;
+  color: var(--navy);
+}
+.pairfilms-legend {
+  margin: 0 0 8px;
+  overflow-wrap: anywhere;
+}
+.pairfilms-counts,
+.pairfilms-tabs,
+.pairfilms-flagsum {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.pairfilms-tabs .chip {
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+}
+.pairfilms-list {
+  max-height: 24rem; /* up to pair_films.max_rows (200) rows: scroll inside, the header sticks */
+  overflow-y: auto;
+}
+.pairfilms-table {
+  table-layout: fixed;
+  max-width: 46rem; /* in the wide uCF panel the numbers stay next to the titles they belong to */
+}
+.pairfilms-table col.pf-col-num {
+  width: 3.6rem;
+}
+.pairfilms-table th {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pairfilms-table td.pf-film {
+  overflow-wrap: anywhere;
+}
+.pf-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 3px;
+}
+.pill.tag-flag {
+  border: 1px solid var(--amber-line);
+  background: var(--amber-bg);
+  color: var(--amber-ink);
+  cursor: help;
+}
+.pf-delta {
+  font-weight: 600;
+}
+.pairfilms-empty,
+.pairfilms-note {
+  margin: 6px 0 0;
+}
+/* WP-115 (2): "Showing the first 200 of N films." is set in the size of the rows above it (12 px, the shared table's): a `p.sub` that sets no size of its own read 16 px,
+   bigger than the table it is the footnote of */
+.pairfilms-note {
+  font-size: 12px;
+}
+.pill.tag-foil {
+  margin-left: 6px;
+  color: var(--amber-ink);
+  background: var(--amber-bg);
+}
+.pill.tag-fault {
+  margin-left: 6px;
+  color: var(--red);
+}
+
+@media (max-width: 1100px) {
+  .trace-selection {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* -- narration ---------------------------------------------------------------------------------- */
+
+.narration-top {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+/* WP-239: the scope of the choice the step makes ("Scope: whole class": the hybrid walks): an outline chip beside the phase pill - its hover tip is the long sentence and what the literature does
+   instead. `.chip` is `inline-flex`, which outranks the `hidden` attribute, so the steps with no scope hide it explicitly */
+.narration-top .scope-chip {
+  flex: none;
+  white-space: nowrap;
+  cursor: help;
+}
+.narration-top .scope-chip[hidden] {
+  display: none;
+}
+.narration-text {
+  margin: 0 0 8px;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.presenting .narration-text {
+  font-size: 22px;
+}
+.status-strip {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.status-strip .status-key {
+  color: var(--muted);
+}
+/* WP-106 (3b): the strip's "user <name>" and "item <film>" chips in the role colours (tokens.css --c-user / --c-item): a light tint of the role
+   as the ground, the role colour mixed with the ink for the text (the pure colour on its own tint does not reach 4.5:1 for the item blue),
+   a 3 px bar of the pure colour at the left. The numeric chips stay neutral. */
+.status-strip .chip.chip-role {
+  position: relative; /* WP-106 (3c): holds the visually hidden word below */
+  box-shadow: inset 3px 0 0 var(--role);
+  border-color: color-mix(in srgb, var(--role) 45%, var(--line));
+  background: color-mix(in srgb, var(--role) 12%, var(--card));
+  color: color-mix(in srgb, var(--role) 60%, var(--ink));
+}
+/* WP-106 (3c): the word ("user", "item") is no longer drawn - "zaten renkler varken gerek yok" - but stays for screen readers and as the
+   chip's hover title (narration.js); it is visually hidden, not removed, so the accessible name is still "user <name>". (Before this it
+   was drawn in the name's colour: at 80 % opacity it had measured 4.0:1 (item, light) - below AA.) */
+.status-strip .chip.chip-role .status-key {
+  color: inherit;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.status-strip .chip.chip-role-user {
+  --role: var(--c-user);
+}
+.status-strip .chip.chip-role-item {
+  --role: var(--c-item);
+  /* WP-135: a film's name shortens (`.heat-title-name`), the "(Year)" stays; the chip is at most 24em (~ 264 px at its 11 px, the em follows the presenting mode) and at most
+     30 % of the strip's narration region (`container-type` on `.strip-narration`), so on a short strip the sentence keeps its room - the numeric chips are never cut and
+     never shrink, so the film chip is the one that gives way */
+  max-width: min(24em, 30cqw);
+}
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* -- player controls ---------------------------------------------------------------------------- */
+
+.player-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* WP-77: the transport's end stops (⏮ ◀ at the first click, ▶▶ ⏭ at the last) - greyed and inert,
+   still in the flow so nothing shifts */
+.player-controls button:disabled {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* WP-82: the transport glyphs are inline SVG (player-controls.js ICONS): |◀ ▶| step one click,
+   |◀◀ ▶▶| jump to the ends - media-player conventions instead of Unicode's mixed-font arrows */
+.player-controls .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 20px;
+}
+
+.player-icon {
+  display: block;
+}
+.player-controls select {
+  font: inherit;
+  font-size: 12px;
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--card);
+  color: var(--ink);
+}
+.player-counter {
+  font-size: 12px;
+  color: var(--strong);
+  margin-left: 6px;
+  white-space: nowrap; /* WP-105: player-controls.js reserves the width of the widest "Step n / N"; it never wraps */
+}
+/* WP-107 (i): the step counter with the candidate counter under it ("3 / 12", in the role colour of the candidates: a uCF page's neighbours are
+   users, an iCF page's candidates are items). One block as tall as the bar's selects (26 px): the bar, and with it every control, keeps its
+   place; the second line is empty (not removed) outside the candidate loop. The pure role colours reach 4.9:1 and more on the strip's ground. */
+.layout-f .player-counters {
+  display: inline-grid;
+  grid-template-columns: auto auto auto; /* WP-115 (3): numerator | slash | denominator - shared by the two lines, so the slashes stand at the same x */
+  grid-template-rows: 13px 12px;
+  column-gap: 3px;
+  align-content: center;
+  height: 26px;
+  margin-left: 6px;
+}
+.layout-f .player-counters > .pc-row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid; /* the line keeps its own box (hover title, accessible name) and the block's columns */
+}
+.layout-f .player-counters .pc-num {
+  justify-self: end;
+  text-align: right;
+}
+.layout-f .player-counters .pc-slash {
+  justify-self: center;
+}
+.layout-f .player-counters .pc-den {
+  justify-self: start;
+}
+.layout-f .player-counters .pc-row.empty .pc-slash {
+  visibility: hidden; /* outside the loop (and on the weighting step) the lower line shows nothing but keeps its place */
+}
+.layout-f .player-counters .player-counter {
+  margin-left: 0;
+  line-height: 13px;
+}
+.layout-f .player-cand {
+  font-size: 10.5px;
+  line-height: 12px;
+  min-height: 12px;
+  white-space: nowrap; /* player-controls.js reserves the width of the widest "50 / 50" */
+}
+.layout-f .player-cand-user {
+  color: var(--c-user);
+}
+.layout-f .player-cand-item {
+  color: var(--c-item);
+}
+.player-dots {
+  font-size: 9px;
+  color: var(--navy);
+  letter-spacing: 2px;
+  white-space: nowrap; /* ... and of the widest run of dots */
+}
+.player-keys {
+  margin-left: auto;
+  font-size: 10.5px;
+  color: var(--muted);
+}
+.player-progress {
+  height: 4px;
+  background: var(--surface);
+  border-radius: 2px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+.player-progress-fill {
+  height: 100%;
+  background: var(--navy);
+  transition: width 0.25s;
+}
+
+/* -- heat grid ---------------------------------------------------------------------------------- */
+
+/* WP-105a: the sub-matrix is wider than its panel (40 columns need ~1700 px), so the grid scrolls sideways inside its own
+   box - never the page - and the row labels stay put. `position: relative` makes the box the offsetParent of the column
+   headers: heat-grid.js reads their offsetLeft to scroll to a highlighted column. `--heat-label-w` (the widest label,
+   measured once by heat-grid.js) is shared by every row, which is its own grid, so the columns line up.
+   The box scrolls in BOTH directions on purpose: a sticky header row sticks to its nearest scrolling ancestor, and
+   `overflow-x: auto` already makes this box the vertical one too (overflow-y computes to auto). The panel body is a
+   flex column and the box a shrinkable item of it, so a layout that bounds the panel's height (WP-105: `max-height` on
+   `.area-heat`, `overflow: auto` on its body) makes THIS box scroll - header row and labels in place - while the
+   "N more columns" note below stays visible. `--heat-max-h` (a length, optional) bounds the box directly instead. */
+.area-heat .panel-body {
+  display: flex;
+  flex-direction: column;
+}
+.heat-scroll {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow: auto;
+  position: relative;
+  max-height: var(--heat-max-h, none);
+  /* WP-117: the statistic group (mean / median / std) is as sticky as the name column, so the part of the box it covers - and
+     which a scroll-to-column must keep clear - is the name column plus the group; `.has-stats` is set by heat-grid.js only when
+     the view carries the group. Each column has its own width, reserved for its widest text (measured at the cell size, plus the cell's
+     4 px padding either side): the mean and the std for three decimals ("8.888"), the median - the narrowest - for the "med" head and a
+     two-decimal value with its small tail ("4.25") */
+  --heat-stat-w-mean: 50px; /* WP-136: one width for BOTH stories (the ratings and Δ): the widest figure either can write - a signed three-decimal mean "-0.888" (47.8 px with the cell's padding), the median's fewest-digits figure with a three-digit tail "-0.333" (43.6), a std "2.250" (38.9) - so the columns never move when the switch is pressed */
+  --heat-stat-w-med: 46px;
+  --heat-stat-w-std: 42px;
+  --heat-stats-w: 0px;
+  scroll-padding-left: calc(var(--heat-label-w, 72px) + 3px + var(--heat-stats-w));
+}
+.heat-scroll.has-stats {
+  --heat-stats-w: calc(9px + var(--heat-stat-w-mean) + var(--heat-stat-w-med) + var(--heat-stat-w-std)); /* three tracks, a 3 px gap after each */
+}
+.presenting .heat-scroll {
+  --heat-stat-w-mean: 60px; /* the same three widest figures at 16 px: 56.9 / 51.8 / 46 px with the padding */
+  --heat-stat-w-med: 54px;
+  --heat-stat-w-std: 48px;
+}
+/* WP-117: a box too narrow to leave four film columns beside the sticky group (heat-grid.js `syncStatsSticky`, util/heat-stats.js `statsStick`):
+   the statistic cells scroll away with the films, only the name column stays; they are painted below it (z-index 1 < 2), as the corner is above
+   the heads (5). `position: relative` keeps them the positioned parent of their separator lines. */
+.heat-scroll.stats-loose {
+  --heat-stats-w: 0px;
+}
+.heat-scroll.stats-loose .heat-stat,
+.heat-scroll.stats-loose .heat-stat-head {
+  position: relative;
+  left: auto;
+  z-index: 1;
+  box-shadow: none;
+}
+.heat-grid {
+  --heat-col-w: 38px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: max-content;
+  min-width: 100%;
+  font-size: 13px;
+}
+.presenting .heat-grid {
+  --heat-col-w: 42px;
+}
+.heat-row {
+  display: grid;
+  grid-template-columns: var(--cols);
+  gap: 3px;
+  align-items: stretch;
+}
+.heat-head,
+.heat-rowlabel,
+.heat-cell {
+  padding: 4px 6px;
+  border-radius: var(--r);
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+}
+/* WP-105a: the film title written vertically, at most two lines (clampHeadLabel), reading bottom to top; the header
+   is as tall as its longest line (~16 characters), a short title sits at the bottom next to its cells. Normal weight
+   and the darker `--strong` ink: a bold, light-grey 12 px title was unreadable (type tokens in tokens.css; --fs-label
+   is 12 px, 15 px while presenting). */
+.heat-head {
+  align-items: flex-end;
+  padding: 6px 2px;
+  min-height: 0;
+  font-size: var(--fs-label);
+  line-height: 1.2;
+  letter-spacing: normal;
+  color: var(--strong);
+  font-weight: var(--fw-body);
+  overflow: hidden;
+}
+.heat-head-text {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  white-space: nowrap;
+}
+.heat-head-line {
+  display: block;
+}
+.heat-head.is-target {
+  color: var(--c-item); /* WP-106: columns are items (the target item is the first one) */
+  font-weight: var(--fw-label); /* the target is told by colour; at most a touch heavier */
+}
+/* WP-105a: the corner and the row labels stay at the left edge while the cells scroll under them; opaque, so a cell
+   never shows through (the shadow covers the 3 px gap between the label and the first cell) */
+.heat-corner,
+.heat-rowlabel {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--card);
+  box-shadow: 3px 0 0 0 var(--card);
+}
+/* WP-105a: when the box scrolls down (30-row targets) the header row stays on top; the corner sits above both the
+   headers sliding under it sideways and the labels sliding under the header row */
+.heat-head-row {
+  position: sticky;
+  top: 0;
+  z-index: 4; /* WP-107 (d): above the sticky active row (3), which is above the body rows and their labels (2) */
+  background: var(--card);
+  box-shadow: 0 3px 0 0 var(--card);
+}
+.heat-corner {
+  z-index: 5;
+}
+/* WP-107 (d): the active user's row (the first one, the row every other row is compared with) stays right below the header
+   row while the body scrolls. `--heat-head-h` is the measured header height (heat-grid.js); the 3 px are the gap the row has
+   below the header at scrollTop 0, so it does not move when it starts to stick. Opaque, so the rows sliding under it do not
+   show through the 3 px between its cells. Paint order: corner > header row > active row (its label above its cells) >
+   body labels > body cells. The row is a sticky item inside `.heat-body`, which reaches the end of the scrolled content. */
+.heat-row.role-active {
+  position: sticky;
+  top: calc(var(--heat-head-h, 0px) + 3px);
+  z-index: 3;
+  background: var(--card);
+}
+.heat-rowlabel {
+  justify-content: flex-start;
+  color: var(--strong);
+  font-weight: var(--fw-label);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* WP-106 / WP-105a: rows are users in both engines. The active user's name cell is the STRONGER tone of the user colour,
+   a neighbour's (the row a step is about) the lighter tone; a 3 px bar at the left edge is the second cue, so the colour
+   is not the only one (the arrow that used to mark the neighbour is gone). The text is the user colour mixed with the
+   ink: the plain user colour on its own tint measured 3.2-4.1:1 (below AA 4.5:1), this mix 4.5-6.1:1 in both themes. */
+.heat-row.role-active .heat-rowlabel {
+  background: color-mix(in srgb, var(--c-user) 32%, var(--card));
+  color: color-mix(in srgb, var(--c-user) 60%, var(--ink));
+  box-shadow:
+    inset 3px 0 0 var(--c-user),
+    3px 0 0 0 var(--card);
+}
+/* WP-117: the user statistics - mean / median / std - right after the name, before the first film, as sticky as the name. Three
+   fixed tracks, each its own `--heat-stat-w-<mean|med|std>` (heat-grid.js writes them into `--cols`); the k-th one sticks at name
+   width + 3 px + the widths (and gaps) before it. Opaque like the label, with the same 3 px shadow over the gap, so a film cell never
+   shows through while it scrolls under. Numbers: right-aligned, tabular, three decimals (the hover text keeps the four of the formula
+   panel and the candidate table; the median's own digit rule is util/heat-stats.js). NOT `.heat-cell`: the
+   row-level highlight rules (`.heat-row.hl-* .heat-cell`) paint those. Paint order (see `.heat-corner`): the head cells sit at the
+   corner's level inside the header row, the body cells at the labels' level. The statistic the formula subtracts carries `.is-centre` (no
+   style of its own any more, see below). The thin vertical lines open and close the group; they reach 3 px into the
+   gap below so the line is continuous across the rows (not on the last row: it would add 3 px of scrollable height). */
+.heat-stat,
+.heat-stat-head {
+  position: sticky;
+  z-index: 2;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 28px;
+  padding: 4px;
+  background: var(--card);
+  box-shadow: 3px 0 0 0 var(--card);
+  color: var(--strong);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* the k-th column sticks at name width + 3 px + the widths (and 3 px gaps) of the columns before it */
+.heat-stat.stat-0,
+.heat-stat-head.stat-0 {
+  left: calc(var(--heat-label-w, 72px) + 3px);
+}
+.heat-stat.stat-1,
+.heat-stat-head.stat-1 {
+  left: calc(var(--heat-label-w, 72px) + 6px + var(--heat-stat-w-mean, 42px));
+}
+.heat-stat.stat-2,
+.heat-stat-head.stat-2 {
+  left: calc(var(--heat-label-w, 72px) + 9px + var(--heat-stat-w-mean, 42px) + var(--heat-stat-w-med, 34px));
+}
+.heat-stat-small {
+  font-size: 0.8em; /* the digits after the point of a median that needs two ("2." + "25"); tabular-nums is inherited */
+}
+.heat-stat-head {
+  z-index: 5;
+  align-items: flex-end;
+  justify-content: center; /* the head sits centred over its column; the numbers below stay right-aligned */
+  padding: 6px 4px 4px;
+  min-height: 0;
+  font-size: var(--fs-label);
+  font-weight: var(--fw-body);
+  line-height: 1.2;
+}
+.heat-stat.is-missing {
+  color: var(--muted);
+}
+/* WP-131 round 1 (instructor): the statistic the formula subtracts (`.is-centre`, set by heat-grid.js on the head and on every cell of it) is no longer
+   bold and underlined - the flat figures read better, as they do on the item-based page - and what the formula subtracts is said by the (i) note beside
+   the group and by the hover text. The class stays on the cells as the hook of that meaning. */
+.heat-stat.stat-0::before,
+.heat-stat-head.stat-0::before,
+.heat-stat.stat-2::after,
+.heat-stat-head.stat-2::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: -3px;
+  width: 1px;
+  background: var(--line);
+}
+.heat-stat.stat-0::before,
+.heat-stat-head.stat-0::before {
+  left: 0;
+}
+.heat-stat.stat-2::after,
+.heat-stat-head.stat-2::after {
+  right: 0;
+}
+.heat-body > .heat-row:last-child .heat-stat::before,
+.heat-body > .heat-row:last-child .heat-stat::after {
+  bottom: 0;
+}
+/* Round 1 (user): every row's numbers but the active user's sit on a faint green - "a small nod to rgb", the group reads as its own block
+   next to the name and the films. The green is the theme's own token (`--green`, tokens.css: #1a9d54 light, #00c853 dark) mixed into the
+   card at 12 %, so each theme gets its own tone from one rule (an opaque colour: nothing scrolls through it); the text keeps the `--strong`
+   ink (measured: >= 4.5:1 in both themes). The active user's row keeps its own tint over its numbers (the stronger tone of the user colour,
+   the name's), and the step's neighbour row a deeper green (22 %) - the row-level emphasis the name cell shows with its user-colour tint.
+   The heads and the name cells are not touched. */
+.heat-stat {
+  background: color-mix(in srgb, var(--green) 12%, var(--card));
+}
+.heat-row.role-active .heat-stat {
+  background: color-mix(in srgb, var(--c-user) 14%, var(--card));
+}
+.heat-row.hl-neighbor .heat-stat {
+  background: color-mix(in srgb, var(--green) 22%, var(--card));
+}
+.heat-row.hl-dropped .heat-stat {
+  color: var(--muted);
+}
+.presenting .heat-stat {
+  min-height: 36px;
+  font-size: 16px;
+}
+/* WP-136: the group's second story - Δ, the statistics of the CENTRED values - keeps the ratings' columns (one width for both stories, above), the ratings' digit rules (three
+   decimals for the mean and the std, the fewest exact digits for the median with its small tail; a true minus, no plus, 0.000 for zero) and the ratings' one-line head: the
+   word stays where it is and a small "Δ" stands over it (a separate line in the white space above the head's text, which the head - as tall as the header row - has in both
+   stories, so nothing in the header row changes height). Nothing is emphasised in this story (`is-centre` is the ratings' mark). */
+.heat-stat-head.is-centred {
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+}
+.heat-stat-delta {
+  font-size: 0.8em;
+  line-height: 1;
+  font-weight: var(--fw-label);
+}
+/* WP-136: the switch "ratings | Δ" stands in the white space above the three heads (the header row is as tall as the longest vertical title; the heads sit at its bottom): the
+   last head's child, anchored to its right edge and as wide as the three columns, small and dim like the (i) beside the panel title. The strip itself lets the pointer through (the
+   heads under it keep their hover text); only its two buttons take it. The ink is `--strong` (>= 4.5 : 1 on the card), the pressed half the page ground with the heavier weight. */
+.heat-scroll.has-stat-switch .heat-head-row {
+  min-height: 64px; /* room for the switch above a two-line "Δ / mean" head, whatever the titles above the films are */
+}
+.heat-stat-switch {
+  position: absolute;
+  top: 3px;
+  right: 0;
+  width: calc(var(--heat-stat-w-mean, 42px) + var(--heat-stat-w-med, 34px) + var(--heat-stat-w-std, 42px) + 6px);
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+.heat-stat-switch button {
+  pointer-events: auto;
+  font: inherit;
+  font-size: 10px;
+  line-height: 1.2;
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--strong);
+  cursor: pointer;
+}
+.heat-stat-switch button:first-child {
+  border-radius: var(--r) 0 0 var(--r);
+}
+.heat-stat-switch button:last-child {
+  border-radius: 0 var(--r) var(--r) 0;
+  border-left-width: 0;
+}
+.heat-stat-switch button.active {
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: var(--fw-label);
+}
+.heat-stat-switch button[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.presenting .heat-stat-switch button {
+  font-size: 12px;
+}
+.heat-scroll.stats-loose .heat-stat-switch {
+  z-index: 1; /* the heads scroll with the films there: the strip is one of their children and goes with them */
+}
+/* WP-117: the (i) of the group sits in the panel head (heat-grid.js `headSlot`), outside the scroll box; it is only there while the
+   matrix tab shows a view with the group, and the tab strip keeps its own height */
+.heat-info-slot {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  margin-left: auto;
+}
+.heat-info-slot:empty,
+.layout-f .area-heat:has(> .panel-body.is-covered) .heat-info-slot {
+  display: none;
+}
+.heat-cell {
+  background: var(--surface);
+  font-variant-numeric: tabular-nums;
+}
+.heat-cell.is-missing {
+  color: var(--line);
+}
+.heat-cell.is-target-col {
+  border-left: 2px solid var(--c-item); /* WP-106 */
+}
+/* WP-138: where the grid has users as rows (the user-based and the model grids) the TARGET film's column - the one the walk is about, with the active user's `?` / rating at its top
+   - stays pinned beside the name column and the statistic group while the other columns scroll under it: sticky at `left` = the name column + the gap + the group (`--heat-stats-w`
+   is 9 px + the three widths, 0 while the group scrolls away - `.stats-loose` - or is absent, so then the name column alone), the very edge the scrolling columns stop at (heat-grid.js
+   `revealHighlightedColumn`, util/heat-reveal.js `stickyLeftWidth`). The item-based grid pins the target film's ROW instead (`.heat-row.role-target`), and its columns are users: neither
+   class below exists there. Paint order: the pinned head (3) sits above the sliding heads and below the group's heads and the corner (5) in the header row; the pinned cells (1) above
+   the sliding cells and below the name and group cells (2). A thin line at its right edge says where the pinned part ends - as the group's separator does - over a 3 px shadow in the
+   card colour that covers the gap, so no scrolling cell shows between. The head takes the card colour as a ground (it had none: the heads slid under it visibly). */
+.heat-head.is-target,
+.heat-cell.is-target-col {
+  position: sticky;
+  left: calc(var(--heat-label-w, 72px) + 3px + var(--heat-stats-w, 0px));
+  z-index: 1;
+  box-shadow:
+    inset -1px 0 0 var(--line),
+    3px 0 0 0 var(--card);
+}
+.heat-head.is-target {
+  z-index: 3;
+  background: var(--card);
+}
+/* a dropped row fades its cells (opacity); a faded pinned cell would show the cells scrolling under it - it keeps its full strength (the row's name is dimmed and struck through as before) */
+.heat-row.hl-dropped .heat-cell.is-target-col {
+  opacity: 1;
+}
+/* native scrolling to an element (focus, scrollIntoView) keeps clear of the pinned column too: the label, the group and the column (38 px, 42 px presenting) with the gaps */
+.heat-scroll:has(.heat-head.is-target) {
+  scroll-padding-left: calc(var(--heat-label-w, 72px) + 3px + var(--heat-stats-w) + 38px + 3px);
+}
+.presenting .heat-scroll:has(.heat-head.is-target) {
+  scroll-padding-left: calc(var(--heat-label-w, 72px) + 3px + var(--heat-stats-w) + 42px + 3px);
+}
+.presenting .heat-cell {
+  min-height: 36px;
+  font-size: 16px;
+}
+.heat-note {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* highlight roles: colour plus a second cue (outline, arrow, tick, hatch, strike-through) */
+.hl-target {
+  outline: 2px solid var(--maroon);
+  outline-offset: -1px;
+}
+.heat-row.hl-active .heat-cell {
+  background: color-mix(in srgb, var(--navy) 14%, var(--surface));
+}
+/* WP-105a: the step's neighbour row - its name cell in the lighter tone of the user colour (see role-active above);
+   only the current step's highlights reach here (a neighbour highlight is not persistent), so the paint is gone on the
+   next step. No arrow, no content, no size change. */
+.heat-row.hl-neighbor .heat-rowlabel {
+  background: color-mix(in srgb, var(--c-user) 18%, var(--card));
+  color: color-mix(in srgb, var(--c-user) 60%, var(--ink));
+  box-shadow:
+    inset 3px 0 0 var(--c-user),
+    3px 0 0 0 var(--card);
+}
+/* WP-105a: the column counterpart (iCF: the columns are items, the step's neighbour is a column). The header takes the
+   lighter tone of the ITEM colour with the same text mix and a 3 px bar at its bottom edge (next to its cells); the target
+   column stays the plain item colour as text (weight 500) with the border on its cells and no tint, so the two read apart:
+   neighbour = tinted ground + bar, target = coloured text + border. Measured text/ground 5.7 (light) and 6.4 (dark). */
+.heat-head.hl-neighbor {
+  background: color-mix(in srgb, var(--c-item) 18%, var(--card));
+  color: color-mix(in srgb, var(--c-item) 60%, var(--ink));
+  box-shadow: inset 0 -3px 0 var(--c-item);
+}
+/* the generic `.hl-neighbor::after` (app.css, WP-31: a rank badge for table rows) is an empty pseudo-element with a 4 px
+   margin here. On a neighbour ROW it was one more grid item (a row of its own, +3 px of gap: the grid was 319 / 322 /
+   337 px tall); on a neighbour COLUMN's header and cells it widened a track and pushed the text 2 px sideways (the grid
+   was 1717 / 1748 px wide in the step that named all candidates) */
+.heat-row.hl-neighbor::after,
+.heat-head.hl-neighbor::after,
+.heat-cell.hl-neighbor::after {
+  content: none;
+}
+.heat-row.hl-neighbor .heat-cell {
+  border-color: var(--navy);
+}
+.heat-cell.hl-corated {
+  background: color-mix(in srgb, var(--green) 22%, var(--surface));
+  font-weight: 700;
+}
+.heat-cell.hl-excluded,
+.heat-row.hl-excluded .heat-cell {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 4px,
+    var(--line) 4px,
+    var(--line) 5px
+  );
+  text-decoration: line-through;
+}
+.hl-dropped {
+  opacity: 0.45;
+}
+/* WP-105a: a dropped ROW fades its cells and dims its label's text - fading the whole row would turn the sticky
+   label translucent and let the cells scroll visibly through it */
+.heat-row.hl-dropped {
+  opacity: 1;
+}
+.heat-row.hl-dropped .heat-cell {
+  opacity: 0.45;
+}
+.heat-row.hl-dropped .heat-rowlabel {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+/* WP-109 (1): the selected neighbour's tick stands in FRONT of the name, in a slot every row label has (empty in a row that
+   is not selected), so the names start at the same x in all rows and neither the label column nor the grid changes size
+   between steps. The slot is a flex item of the label (its width is part of the label width heat-grid.js measures once),
+   not a character of the name: the WP-96 link and the WP-105a paints around it are untouched. The tick is a shape, so
+   the green is not the only cue (the cells' border turns green too). */
+.heat-rowlabel::before {
+  content: "";
+  flex: 0 0 1.25em;
+  margin-right: 2px;
+  text-align: center;
+  color: var(--green);
+}
+.heat-row.hl-selected .heat-rowlabel::before {
+  content: "\2713";
+}
+.heat-row.hl-selected .heat-cell {
+  border-color: var(--green);
+}
+.hl-dim {
+  opacity: 0.35;
+}
+.heat-cell.hl-result {
+  background: var(--navy);
+  color: var(--on-navy); /* WP-132a: white on the light theme's navy, the dark ground on the dark theme's periwinkle (was #fff: 2.49 : 1 there) */
+  font-weight: 700;
+  outline: 2px solid var(--ink); /* WP-106: maroon left the matrix; a neutral ring around the navy result cell */
+}
+/* WP-106: the step's target highlight inside the matrix is neutral (a navy ring) and the text takes the item colour;
+   maroon is no longer used by the matrix. The generic `.hl-target` ring above stays for other panels. */
+.heat-cell.hl-target,
+.heat-head.hl-target {
+  color: var(--c-item-ink); /* WP-132a: the text mix of the item colour (the plain blue was 3.5 : 1 on an active row's tint in the light theme) */
+  outline-color: var(--navy);
+}
+
+/* -- WP-131: the item-based grid draws a FILM per row and a USER per column ------------------------------------------------------
+   The roles keep their colours (WP-106: users dark red, items blue), so every rule that tinted a ROW in the user colour and a COLUMN in the
+   item colour has its mirror here: the row classes `role-target` / `hl-*` now belong to films, the column classes `is-active` / `hl-*` to users.
+   Nothing below applies to the other grids (users as rows): `role-target` and `is-active*` exist only in the item-based grid, the rest is
+   under `.rows-items` (heat-grid.js). The target film's row is pinned right below the header, as the active user's row is on the user-based
+   page (`.heat-row.role-active` above: "the row every other row is compared with"). */
+.heat-row.role-target {
+  position: sticky;
+  top: calc(var(--heat-head-h, 0px) + 3px);
+  z-index: 3;
+  background: var(--card);
+}
+.heat-row.role-target .heat-rowlabel {
+  background: color-mix(in srgb, var(--c-item) 32%, var(--card));
+  color: color-mix(in srgb, var(--c-item) 60%, var(--ink));
+  box-shadow:
+    inset 3px 0 0 var(--c-item),
+    3px 0 0 0 var(--card);
+}
+.heat-row.role-target .heat-cell {
+  border-top: 2px solid var(--c-item); /* the row counterpart of the target column's left border (`.is-target-col`) */
+}
+.heat-row.role-target .heat-stat {
+  background: color-mix(in srgb, var(--c-item) 14%, var(--card));
+}
+/* WP-135 + WP-131 (instructor): a film title is written flush RIGHT, so the "(Year)" parentheses stand one under the other like a column, and when the
+   title does not fit its room the NAME is clamped (an ellipsis) while the year stays whole at the right edge: "A Very Long Na… (1970)". The room is a
+   layout box, so this needs no measuring: the name span shrinks (down to 1.5 characters, so at least one letter and the ellipsis show) and the year span
+   does not. The tick slot of a selected row (`.heat-rowlabel::before`) keeps the left edge: its auto right margin takes the free space. Only the item-based
+   grid's name column (`.rows-items`): the user names of the other grids stay flush left. The 6 px padding and the grid's 3 px gap keep the year off the
+   line that opens the statistic group. */
+.rows-items .heat-rowlabel {
+  justify-content: flex-end;
+}
+.rows-items .heat-rowlabel::before {
+  margin-right: auto;
+}
+.heat-title-name {
+  flex: 0 1 auto;
+  min-width: 1.5em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.heat-title-year {
+  flex: 0 0 auto;
+  margin-left: 0.3em;
+  white-space: nowrap;
+}
+/* WP-135: the host of a clamped film title outside the grid (util/title-clamp.js `fillClampedTitle`): a flex box that may shrink, so the NAME span gives way and
+   the year span keeps its width. A table cell / heading that carries one: the cell's own row (`title-row`: the title, then the flags beside it - the flags
+   keep their place, the name is what gives way), a right-aligned head, an Items-table label (`display: block` there), the "Rated only <film> (n)" heading
+   (the words around the film stay whole). */
+.title-clamp {
+  display: flex;
+  min-width: 0;
+}
+.title-row {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+}
+.title-row > .title-clamp {
+  flex: 0 1 auto;
+}
+.title-row > .pf-flags {
+  flex: none;
+  margin-left: 6px;
+}
+.num .title-clamp {
+  justify-content: flex-end;
+}
+.cohort-label.title-clamp {
+  display: flex;
+}
+.pf-col-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3em;
+}
+.pf-col-head > .title-clamp {
+  flex: 0 1 auto;
+}
+/* the film a step is about (the lighter tone of the ITEM colour; a 3 px bar at the left edge is the second cue) */
+.rows-items .heat-row.hl-neighbor .heat-rowlabel {
+  background: color-mix(in srgb, var(--c-item) 18%, var(--card));
+  color: color-mix(in srgb, var(--c-item) 60%, var(--ink));
+  box-shadow:
+    inset 3px 0 0 var(--c-item),
+    3px 0 0 0 var(--card);
+}
+/* the step's target highlight: the generic maroon ring would outline the whole row; the rows' cells get the neutral navy ring of the matrix
+   (as in a target column) and the name the item colour */
+.rows-items .heat-row.hl-target {
+  outline: none;
+}
+.rows-items .heat-row.hl-target .heat-cell {
+  color: var(--c-item-ink); /* WP-132a: see `.heat-cell.hl-target` */
+  outline: 2px solid var(--navy);
+  outline-offset: -1px;
+}
+/* the active user's column: the stronger tone of the USER colour on its head (a 3 px bar at the bottom, next to its cells), a 2 px left border on
+   its cells; the step's highlight of it (`hl-active`) takes the same head */
+.heat-head.is-active,
+.heat-head.hl-active {
+  background: color-mix(in srgb, var(--c-user) 30%, var(--card)); /* 30 %, not the row label's 32 %: on the dark theme that tone measured 4.498 : 1, a hair under AA */
+  color: color-mix(in srgb, var(--c-user) 60%, var(--ink));
+  box-shadow: inset 0 -3px 0 var(--c-user);
+}
+.heat-cell.is-active-col {
+  border-left: 2px solid var(--c-user);
+}
+.rows-items .heat-cell.hl-active {
+  background: color-mix(in srgb, var(--navy) 14%, var(--surface));
+}
+/* a neighbouring USER column (a header highlight in the user's tone, as a neighbouring film column has the item's in the user-based grid) */
+.rows-items .heat-head.hl-neighbor {
+  background: color-mix(in srgb, var(--c-user) 18%, var(--card));
+  color: color-mix(in srgb, var(--c-user) 60%, var(--ink));
+  box-shadow: inset 0 -3px 0 var(--c-user);
+}
+
+/* -- WP-132: centred cells (rating - centre) on a diverging scale ------------------------------------------------------------------
+   heat-grid.js gives every centred cell an arm - `is-neg` (below the centre), `is-pos` (above it), `is-zero` - and the strength along it, `--t` (0..1,
+   the difference over half the rating scale, so a number has the same colour on every step). The cell is the neutral grey with that share of the arm's
+   pole mixed in (`color-mix`, one hue per arm, equal steps; tokens.css `--div-neg` / `--div-pos` / `--div-mid`, both themes), and the ink is the app's
+   own `--ink` at every point of both arms (>= 4.5 : 1, tests/app/test_heat_centred.py). The figure carries a sign, so the colour is not the only cue.
+   The raw grid keeps its single ground. The step highlights keep their other cues here: the prediction cell its navy ground, a co-rated cell
+   (`hl-corated`) its bold figure and a green ring instead of the tint that the diverging ground replaces, the target film's cells their navy ring. */
+.heat-cell.is-neg {
+  --div-pole: var(--div-neg);
+}
+.heat-cell.is-pos {
+  --div-pole: var(--div-pos);
+}
+.heat-grid.is-centred .heat-cell:is(.is-neg, .is-pos, .is-zero) {
+  background: color-mix(in srgb, var(--div-pole, var(--div-mid)) calc(var(--t, 0) * 100%), var(--div-mid));
+  color: var(--ink);
+}
+/* WP-137: the held-out cell (the active user's rating of the target film) is `?` until the prediction step reveals it (heat-grid.js); it has no arm and no strength in the
+   centred grid (no difference to show yet); WP-137a: its look is the rule after the prediction cell's, below */
+/* WP-137a: and it does not read as a rating: a larger, heavier question mark (1.25x, weight 700; the figures around it are 13 px, 16 px presenting) light on a dark box - the
+   navy ground and the ink of the prediction cell (`--navy` / `--on-navy`, 13.24 : 1 light and 7.18 : 1 dark: the pair of WP-132a), so the cell stands out from its neighbours and,
+   when the prediction step opens it, keeps its ground and only the mark gives way to the figure. The ground and ink are the last word below (the row / column highlights would
+   out-weigh them otherwise: the same bug class as the prediction cell's). No ring, no pulse (the pulse belongs to the fault button); raw and centred look the same. */
+.heat-cell.is-held-out {
+  cursor: help;
+  font-size: 1.25em;
+  font-weight: 700;
+}
+.presenting .heat-cell.is-held-out {
+  font-size: 20px; /* 1.25 x the presenting cell's 16 px (`em` would be of the row's 13 px) */
+}
+/* WP-137a: the step that opens the cell fades the figure in (heat-grid.js puts the class on for half a second); reduced motion: at once */
+.heat-cell.is-opening {
+  animation: held-out-open 0.35s ease-out;
+}
+@keyframes held-out-open {
+  from {
+    opacity: 0.2;
+    transform: scale(1.18);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .heat-cell.is-opening {
+    animation: none;
+  }
+}
+/* WP-137a: the summary bar's and the picker chip's hidden figure: the same question mark, the pointer says "hover for the reason" */
+.trace-summary .is-held-out,
+.held-out .is-held-out {
+  cursor: help;
+}
+/* WP-137a: the held-out reveal setting - at the far right of the Parameters head, level with Apply / Defaults (the head is a flex row: the title, the two buttons, then this,
+   then the fold caret). Its two choices are the app's segmented control at the height of a small button. */
+.param-reveal {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--strong);
+  white-space: nowrap;
+}
+.param-reveal[hidden] {
+  display: none;
+}
+/* WP-195c stage 2: the per-user model's kind (the regression | the small network) in the Parameters head, after the hint and before the held-out setting: the same label and segmented control at
+   the height of a small button (23 px with the frame), so the head's height never changes; it keeps its width and the hint, which takes the head's free room, gives way (an ellipsis) */
+.param-kind {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  margin: 0 8px 0 4px;
+  font-size: 11px;
+  color: var(--strong);
+  white-space: nowrap;
+}
+.param-kind .miniseg button {
+  padding: 0 9px;
+  height: 21px;
+}
+.param-reveal .miniseg button {
+  padding: 0 9px;
+  height: 21px; /* + the 1 px frame of the control = 23 px, the height of Apply / Defaults (`.btn-sm`: measured) */
+}
+/* WP-243: only while the setting is DRAWN. A hidden setting (no held-out cell yet, the content page) is still the caret's previous sibling, and the 4 px took away the caret's own `auto`
+   margin (app.css `.panel-head .caret`): the Parameters caret stood right after Defaults instead of at the far right of the head (measured). */
+.param-reveal:not([hidden]) + .caret {
+  margin-left: 4px; /* the caret keeps the far right edge; the setting stands before it (this one `auto` margin takes the free room) */
+}
+.heat-grid.is-centred .heat-cell.hl-corated {
+  box-shadow: inset 0 0 0 2px var(--green);
+}
+.heat-grid.is-centred .heat-row.hl-target .heat-cell {
+  color: var(--ink); /* the target film's cells wore the item colour; on the diverging ground the ink reads, the navy ring marks the row */
+}
+/* WP-132a: the prediction cell is the walk's result - the one cell whose ground and ink must not depend on which highlights share it. The rules above that paint
+   a row or a column (`.heat-row.hl-active .heat-cell`, `.heat-cell.hl-target`, their item-based mirrors `.rows-items .heat-row.hl-target .heat-cell` /
+   `.rows-items .heat-cell.hl-active`, the centred `.heat-grid.is-centred .heat-row.hl-target .heat-cell`) out-weigh the two-class `.heat-cell.hl-result`, so the cell
+   wore the row's tint and the item colour (3.5 : 1 in the raw grid) or, on the item-based page centred, the dark ink on its navy (1.05 : 1); and where the navy
+   did show, the white ink on the dark theme's periwinkle was 2.49 : 1. This is the last word: the navy ground, `--on-navy` ink (13.24 : 1 light, 7.18 : 1 dark)
+   and a neutral ring (the item-colour / navy ring of a target cell was navy-on-navy). It is as heavy as the heaviest rival (4 classes raw, 5 classes centred)
+   and stands after all of them; tests/app/test_heat_result_cell.py pins the weights and the order. */
+.heat-grid .heat-row .heat-cell.hl-result,
+.heat-grid.is-centred .heat-row .heat-cell.hl-result {
+  background: var(--navy);
+  color: var(--on-navy);
+  outline-color: var(--ink);
+}
+/* WP-137a: the held-out cell's `?` wears the same two tokens, with the same weights (4 classes raw, 5 centred) and after every rival: the row / column highlights paint
+   the cell's ground and ink too (the active row's tint, the target's item colour), and the question mark must read light on dark in every one of them. (It never carries
+   `hl-result` at the same time: the step that opens it replaces the mark with the figure.) tests/app/test_heat_result_cell.py pins the weights and the order. */
+.heat-grid .heat-row .heat-cell.is-held-out,
+.heat-grid.is-centred .heat-row .heat-cell.is-held-out {
+  background: var(--navy);
+  color: var(--on-navy);
+}
+/* WP-137a: on the user-based page the box is the users' red (the focus entity of that page is a user; the item-based page's is a film, the navy one): heat-grid.js adds
+   `is-held-user` there only (`heldRole`), the MF / DNN grids keep the navy. One class heavier than the rules above (5 classes raw, 6 centred) and after them. */
+.heat-grid .heat-row .heat-cell.is-held-out.is-held-user,
+.heat-grid.is-centred .heat-row .heat-cell.is-held-out.is-held-user {
+  background: var(--held-user);
+  color: var(--on-held-user);
+}
+/* the switch "raw | centred" and the (i) in the head of the panel */
+.heat-info-slot {
+  gap: 6px;
+}
+
+/* -- formula panel -------------------------------------------------------------------------------- */
+
+.formula-head {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 6px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.formula-layer {
+  padding: 6px 0;
+  border-top: 1px dashed var(--line);
+  overflow-x: auto;
+}
+.formula-layer:first-of-type {
+  border-top: none;
+}
+.formula-layer .katex-display {
+  margin: 4px 0;
+}
+.formula-layer .v {
+  color: var(--navy);
+  font-weight: 600;
+  cursor: help;
+}
+/* WP-115 (5): a name inside a formula (the user / item subscripts, e.g. the a, u of the significance-weighted w'_{a,u}) is set in its role colour - the red of a user, the
+   blue of an item - as in the tables and the sub-matrix. The server classes the name (`\htmlClass{t-user}{...}`, formulas.py `_classed`); where it does not, nothing is
+   styled. After `.formula-layer .v` (same weight of selector): the role colour wins over the value's navy when one span has both classes. */
+.formula-layer .t-user,
+.katex .t-user {
+  color: var(--c-user);
+}
+.formula-layer .t-item,
+.katex .t-item {
+  color: var(--c-item);
+}
+.formula-idle {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 0;
+}
+.formula-note {
+  font-size: 11px;
+  color: var(--muted);
+}
+/* WP-188: the notes of a step (the closing step of a content-based predict trace) as a quote in the Formula box: a quiet heading, one paragraph per sentence, a rule on the left in the
+   page's own line colour (no new colour). The size is rem (the presenting view enlarges it) times the box's own text step (--formula-zoom, the - / + of its head); the box is a
+   scroll box, so a long note scrolls inside it and no step changes the box's size. Under a formula (WP-189) it sits last, set off by the space above. */
+.formula-notes {
+  margin: 0;
+  padding: 2px 0 2px 10px;
+  border-left: 2px solid var(--line);
+  color: var(--strong);
+  font-size: calc(0.75rem * var(--formula-zoom, 1));
+  line-height: 1.5;
+}
+.formula-layer ~ .formula-notes,
+.formula-same-rule ~ .formula-notes {
+  margin-top: 8px;
+}
+.formula-notes-head {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 0.92em;
+}
+.formula-notes p {
+  margin: 0 0 6px;
+}
+.formula-notes p:last-child {
+  margin-bottom: 0;
+}
+/* WP-108 (a): "the same rule for the other N neighbours", under the numeric line of the significance-weighting step */
+.formula-same-rule {
+  font-size: 12px;
+  color: var(--strong);
+  padding: 2px 0 0;
+}
+.fade-in {
+  animation: fade-in 0.25s ease-out;
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.presenting .katex {
+  font-size: 1.35em;
+}
+/* WP-107 (g): the uCF / iCF formula's text size = KaTeX's own size (1.21em, 1.35em presenting) times the reader's step
+   (`--formula-zoom`, set by components/zoom-buttons.js on the panel; 1 until the buttons are used). Only the math is scaled -
+   the panel's height never changes, its body scrolls inside. The - / + sit at the right of the panel's head, in a fixed-width
+   group, so no step moves them. */
+.layout-f .area-formula .katex {
+  font-size: calc(1.21em * var(--formula-zoom, 1));
+}
+.presenting .layout-f .area-formula .katex {
+  font-size: calc(1.35em * var(--formula-zoom, 1));
+}
+/* WP-107 (g2): the Code panel's text size = its own 13 px times the reader's step (`--code-zoom`, set on the panel); the line height is
+   unitless and follows, the line numbers (em) too */
+.layout-f .code-panel {
+  font-size: calc(13px * var(--code-zoom, 1));
+}
+.layout-f .zoom-buttons {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: -3px 0 -3px auto; /* far right; the head keeps the height the other panels' heads have */
+}
+/* the table has no panel head: its group sits in the title row, inside the body's 10 px padding - pushed in by 4 px to the head's 14 px,
+   so the four groups end at the same x */
+.layout-f .area-table .zoom-buttons {
+  margin-right: 4px;
+}
+.layout-f .zoom-btn {
+  width: 22px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--card);
+  color: var(--navy);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.layout-f .zoom-btn:hover:not(:disabled) {
+  border-color: var(--navy);
+}
+.layout-f .zoom-btn:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+}
+.layout-f .zoom-btn:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: 1px;
+}
+.layout-f .zoom-value {
+  min-width: 3.2em; /* "0.7×" ... "1.4×" are the same width (one decimal, tabular figures), so the group never changes size */
+  text-align: center;
+  font-size: 11px;
+  font-weight: var(--fw-body, 400);
+  color: var(--strong);
+  font-variant-numeric: tabular-nums;
+}
+
+/* -- code panel -------------------------------------------------------------------------------- */
+
+.code-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 4px;
+  font-family: var(--mono);
+}
+.code-qualname {
+  color: var(--navy);
+  font-weight: 700;
+}
+.code-panel {
+  max-height: 360px;
+  overflow: auto;
+}
+.code-panel .line {
+  display: grid;
+  grid-template-columns: 3.5em 1fr;
+  white-space: pre;
+  line-height: 1.45;
+  padding: 0 4px;
+  border-radius: 2px;
+}
+.code-panel .line .ln {
+  color: var(--muted);
+  text-align: right;
+  padding-right: 10px;
+  user-select: none;
+}
+.code-panel .line.has-marker .ln {
+  color: var(--navy);
+}
+.code-panel .line.hl {
+  background: color-mix(in srgb, var(--navy) 16%, transparent);
+  box-shadow: inset 3px 0 0 var(--navy);
+}
+/* WP-107 (f): coloured Python on the uCF / iCF pages (code-panel.js `highlight`, util/py-highlight.js). The colours are tokens
+   (tokens.css, AA on the panel ground and on the highlighted line in both themes); keywords are bold, comments italic. */
+.layout-f .code-panel .tok-kw {
+  color: var(--code-kw);
+  font-weight: var(--fw-heading, 600);
+}
+.layout-f .code-panel .tok-const {
+  color: var(--code-const);
+}
+.layout-f .code-panel .tok-str {
+  color: var(--code-str);
+}
+.layout-f .code-panel .tok-com {
+  color: var(--code-com);
+  font-style: italic;
+}
+.layout-f .code-panel .tok-num {
+  color: var(--code-num);
+}
+.layout-f .code-panel .tok-fn,
+.layout-f .code-panel .tok-dec {
+  color: var(--code-fn);
+}
+.layout-f .code-panel .tok-fn {
+  font-weight: var(--fw-heading, 600);
+}
+
+/* -- flowchart ----------------------------------------------------------------------------------- */
+
+/* WP-92: the chart is drawn at natural size in px (flowchart.js sizes the svg and lays it out for the panel width), so
+   no fixed viewBox squeezes the text: a label is 13 px / 500 on screen, never bold; only the ACTIVE node changes its
+   colour and border. It centres in the panel and only ever shrinks (max-width), never grows. */
+.flowchart {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+.flow-node-box {
+  fill: var(--card);
+  stroke: var(--line);
+  stroke-width: 1.5;
+}
+.flow-node {
+  cursor: pointer;
+}
+.flow-node:hover .flow-node-box {
+  stroke: var(--strong);
+}
+/* WP-212: a box with a tip (flowchart.js, util/flow-tip.js) takes the keyboard focus: the focused box is marked like a hovered one, with no browser outline around the whole group */
+.flow-node[tabindex]:focus {
+  outline: none;
+}
+.flow-node[tabindex]:focus-visible .flow-node-box {
+  stroke: var(--navy);
+  stroke-width: 2.5;
+}
+/* WP-212: the bubble a hovered / focused box of the chart shows - the network diagram's `.net-tip` look (navy ground, the on-navy ink), `position: fixed` so the panel body's
+   `overflow` does not clip it, sized in rem so presenting mode (root 20 px) enlarges it with the rest of the page; it never takes the pointer. */
+.flow-tip {
+  position: fixed;
+  z-index: 60;
+  width: 22rem;
+  max-width: calc(100vw - 16px);
+  padding: 0.5rem 0.65rem;
+  border-radius: var(--r-lg);
+  background: var(--navy);
+  color: var(--on-navy);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  text-align: left;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  overflow-y: auto;
+  pointer-events: none;
+}
+.flow-tip[hidden] {
+  display: none;
+}
+.flow-node.done .flow-node-box {
+  fill: var(--surface);
+  stroke: var(--muted);
+}
+.flow-node.active .flow-node-box {
+  stroke: var(--navy);
+  stroke-width: 3;
+  animation: node-pulse 1.2s ease-in-out infinite;
+}
+@keyframes node-pulse {
+  0%,
+  100% {
+    stroke-opacity: 1;
+  }
+  50% {
+    stroke-opacity: 0.35;
+  }
+}
+.flow-label {
+  font-size: 13px; /* flowchart.js FONT_PX */
+  font-weight: 500;
+  letter-spacing: normal;
+  fill: var(--ink);
+  /* app.css still styles the node GROUP (`.flow-node {stroke: var(--line)}`, `.flow-node.active {stroke: var(--navy);
+     stroke-width: 2}`) and a text inherits a stroke: the labels were outlined - washed out when idle, heavy and
+     cramped when active. A label has no outline; the box carries the emphasis. */
+  stroke: none;
+  pointer-events: none;
+}
+.flow-node.active .flow-label {
+  fill: var(--navy); /* colour and border carry the emphasis, the weight stays */
+}
+.flow-edge {
+  stroke: var(--muted);
+  stroke-width: 1.5;
+  fill: none;
+}
+.flow-arrowhead {
+  fill: var(--muted);
+}
+.flow-edge-label {
+  font-size: 11px; /* flowchart.js EDGE_FONT_PX */
+  fill: var(--strong);
+  paint-order: stroke; /* a card-coloured halo keeps the label legible where a line passes close */
+  stroke: var(--card);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+/* -- trace tables -------------------------------------------------------------------------------- */
+
+.table-head {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 6px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.table-wrap {
+  overflow-x: auto;
+}
+table.data-table tbody tr {
+  transition: transform 0.35s ease;
+}
+table.data-table tbody tr.hidden-row {
+  display: none;
+}
+table.data-table tbody tr.focus td {
+  background: color-mix(in srgb, var(--navy) 12%, transparent);
+  font-weight: 700;
+}
+/* WP-108 (c): a column that belongs to a phase (the shrunk weight, the ranks) shows "?" (not known yet) until the player reaches that phase. The number stays
+   in the cell, hidden, so the column keeps its width when it appears; the dot is drawn over it, on the number's side. */
+table.data-table td.phase-cell {
+  position: relative;
+}
+table.data-table td.phase-cell.masked .cv {
+  visibility: hidden;
+}
+table.data-table td.phase-cell.masked::after {
+  content: "?"; /* WP-108 (e iii): "not known yet" reads better than a dot (the user's suggestion); faded by --muted */
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  color: var(--muted);
+}
+.layout-f .area-table td.phase-cell.masked::after {
+  right: calc(7px * var(--table-zoom, 1)); /* the compact table's cell padding */
+}
+/* WP-108 (e-ii): a TEXT cell (the status) is left-aligned: its "?" stands where its text starts, not at the right edge a number would use */
+table.data-table td.phase-cell:not(.num).masked::after {
+  right: auto;
+  left: 8px;
+}
+.layout-f .area-table td.phase-cell:not(.num).masked::after {
+  right: auto;
+  left: calc(7px * var(--table-zoom, 1));
+}
+/* WP-108 (c): beside a rank that significance weighting moved - rose (green) or fell (red); the arrow is always in the cell and hidden
+   when there is nothing to show, so the rank column never changes width */
+table.data-table .rank-move {
+  margin-left: 4px;
+  font-size: 0.75em;
+}
+table.data-table .rank-move.up {
+  color: var(--green);
+}
+table.data-table .rank-move.down {
+  color: var(--red);
+}
+table.data-table .rank-move.off {
+  visibility: hidden;
+}
+table.data-table td.status-selected {
+  color: var(--green);
+}
+table.data-table td.status-non_positive,
+table.data-table td.status-undefined,
+table.data-table td.status-few_corated {
+  color: var(--muted);
+}
+table.data-table td.status-cut_by_k {
+  color: var(--amber-ink);
+}
+/* WP-42: removed by the degree filter before any similarity was computed */
+table.data-table td.status-low_degree {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+/* WP-84: removed by the candidate filter (unrelated to the target) before any similarity */
+table.data-table td.status-off_context {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+/* -- WP-141: the page-level task switch of the trace pages, "Predict a rating | Recommend top-K" (components/task-switch.js) ------------------------------------------
+   The app's segmented control (`.miniseg`) one size up - it is the page's choice, not one parameter's - in rem so presenting mode (root 20 px) scales it with the page.
+   WP-141a: it stands in the title row (`.trace-head-row`, above) on every page; the row is hidden (`hidden`) while the server reports no tasks for the engine. Where the
+   engine has no top-K the choice is a placeholder: faded and not-allowed like the other switched-off chip (WP-110 a), its tip the reason. In the top-K task the film selector goes
+   (its grid cell stays empty: the user's box keeps its width and place) and so does the table panel when the trace has none (the flowchart takes the whole column). */
+.trace-task {
+  display: flex;
+  justify-content: center;
+}
+.trace-task[hidden] {
+  display: none;
+}
+.miniseg.task-seg {
+  border-radius: var(--r-lg);
+}
+.miniseg.task-seg button {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 0.5em 1.5em;
+  white-space: nowrap;
+}
+.trace-selection .trace-panel[hidden],
+.layout-f .trace-block .trace-panel[hidden] {
+  display: none; /* the item picker in the top-K task, the table panel of a top-K trace with no table (a rule that sets `display` would win over the UA's [hidden]) */
+}
+.layout-f .flow-column.no-table .flow-panel {
+  height: 100%;
+}
+.layout-f .flow-column.no-table .splitter {
+  display: none;
+}
+
+/* -- WP-140: a trace on its way (components/trace-loading.js; the states: util/trace-loading.js) -------------------------------------------------------------------------
+   A thin strip above the trace panels says what is being fitted and for how long; the FIRST trace of a page shows its panels as grey placeholders (`.is-loading`), a NEWER
+   trace over one on screen fades the old one and its summary bar (`.is-stale`; the page also makes the panels `inert` and locks their player; the TITLE is not faded - it names
+   the pair asked for and is written as soon as the names arrive). All in rem, so presenting mode scales the strip with the page;
+   the elapsed time is tabular and has a width of its own, so the strip does not twitch every tenth of a second. */
+.trace-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem;
+  padding: 0.25rem 0.75rem;
+  min-height: 1.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 0.8125rem;
+}
+.trace-loading[hidden] {
+  display: none;
+}
+.trace-loading-spinner {
+  flex: none;
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 2px solid var(--line);
+  border-top-color: var(--navy);
+  border-radius: 50%;
+  animation: trace-loading-spin 0.8s linear infinite;
+}
+.trace-loading-time {
+  min-width: 3.25rem; /* the ink, not the muted grey: the number is read from the back of the room (muted on the card is 3.5 : 1) */
+  font-variant-numeric: tabular-nums;
+}
+.trace-loading-tip {
+  display: inline-flex;
+}
+/* WP-191: a request that reports progress (`.has-progress`; components/trace-loading.js): `2/5  Scoring the candidates  40/100 (40 %)  2.0 s  ~3.0 s`. Every cell has a width of its own
+   in `ch` (the width of a zero, wider than the average letter, so a text of N characters fits in N ch; it follows the strip's font, so presenting mode scales it with the page) and the
+   numbers are tabular and right-aligned: a new stage, a longer label, a counter that is not there yet or an estimate that comes and goes never moves a neighbour, and the strip
+   keeps its box between two polls. The label cell is as wide as the longest label there is (`--progress-label-ch`, set from the stage names and the page's waiting sentence) and
+   cuts with an ellipsis beyond it. The counter and the estimate cell are EMPTY, not absent, when the stage has none. Without `.has-progress` the three extra cells are not there. */
+.trace-loading-stage,
+.trace-loading-counter,
+.trace-loading-eta {
+  display: none;
+  flex: none;
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.trace-loading.has-progress .trace-loading-stage,
+.trace-loading.has-progress .trace-loading-counter,
+.trace-loading.has-progress .trace-loading-eta {
+  display: inline-block;
+}
+.trace-loading.has-progress .trace-loading-stage {
+  width: 3ch; /* "5/5" */
+}
+.trace-loading.has-progress .trace-loading-text {
+  flex: none;
+  width: calc(var(--progress-label-ch, 30) * 1ch);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.trace-loading.has-progress .trace-loading-counter {
+  min-width: 19ch; /* "87585/87585 (100 %)": five digits, the largest catalogue; the Turkish "(% 100)" is as long */
+}
+.trace-loading.has-progress .trace-loading-time {
+  flex: none;
+  min-width: 8ch; /* "120.0 s" / "120,0 sn" */
+  text-align: right;
+}
+.trace-loading.has-progress .trace-loading-eta {
+  min-width: 24ch; /* "~999.9 s left (estimate)" / "~999,9 sn kaldı (tahmin)" (WP-210: the estimate says what it is; the room is the longest of the two languages, so it never moves a neighbour) */
+}
+/* WP-161: after a refusal the strip is a notice - the stamp and one sentence, no spinner, no clock (nothing is being waited for) */
+.trace-loading.is-notice .trace-loading-spinner,
+.trace-loading.is-notice .trace-loading-time {
+  display: none;
+}
+.trace-loading-stamp {
+  font-weight: 700;
+}
+/* WP-222: the notice a FAILED request leaves while the old trace stands - the same strip as the refusal's, in the maroon of the app's errors, so it is not read as a waiting message */
+.trace-loading.is-failed {
+  border-color: var(--maroon);
+}
+.trace-loading.is-failed .trace-loading-stamp {
+  color: var(--maroon);
+}
+.trace-layout.is-stale,
+.trace-summary.is-stale,
+.held-out.is-stale {
+  opacity: 0.45;
+  transition: opacity 0.15s ease;
+}
+.trace-layout.is-stale {
+  pointer-events: none;
+}
+/* the first trace of a page: each panel's body is one grey block under its head (the sticky player strip is left alone - `position: relative` would take it off its stick) */
+.trace-layout.is-loading .trace-panel:not(.area-strip) {
+  position: relative;
+}
+.trace-layout.is-loading .trace-panel:not(.area-strip)::after,
+.trace-summary.is-loading:empty::before {
+  content: "";
+  border-radius: var(--r);
+  background: linear-gradient(90deg, var(--line) 0%, color-mix(in srgb, var(--line) 40%, var(--card)) 50%, var(--line) 100%);
+  background-size: 200% 100%;
+  opacity: 0.7;
+  pointer-events: none;
+  animation: trace-loading-shimmer 1.4s ease-in-out infinite;
+}
+.trace-layout.is-loading .trace-panel:not(.area-strip)::after {
+  position: absolute;
+  left: 0.75rem;
+  right: 0.75rem;
+  top: 3rem;
+  bottom: 0.75rem;
+}
+.trace-summary.is-loading:empty::before {
+  display: inline-block;
+  width: 18rem;
+  max-width: 100%;
+  height: 1.5rem;
+}
+@keyframes trace-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes trace-loading-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .trace-loading-spinner,
+  .trace-layout.is-loading .trace-panel:not(.area-strip)::after,
+  .trace-summary.is-loading:empty::before {
+    animation: none;
+  }
+}
+
+/* -- WP-146: where the model of a trace comes from (components/model-source.js, components/large-trace-warning.js; the logic: util/model-source.js) ------------------------------
+   The "Model" row stands first in the Parameters grid and takes the whole row (`grid-column: 1 / -1`): the control at the left, the line that says which stored model it is beside it.
+   It is the app's own segmented control - `.miniseg`, nothing of its own except the outline of the source AUTOMATIC has chosen (not pressed: no fill) - and 12 px ink like the other
+   fields' text (the muted grey of the caption is 3.5 : 1 on the card). The notice of a trace that would train on a large data set is the app's amber banner, in rem so presenting mode
+   scales it with the lecture: the sentence, the ways on, and the command that fits the model beforehand. */
+.param-field.model-field {
+  grid-column: 1 / -1;
+}
+.model-row {
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+.model-state {
+  font-size: 12px;
+  color: var(--ink);
+}
+/* WP-155: the source IN USE is the filled segment with a check mark (the pressed look of the app's segmented control: the primary fill and its ink, --navy / --on-navy, 13.2 : 1 light,
+   7.2 : 1 dark); it is the same whether the person pressed it or automatic came to it (the "auto" tag says which). Every segment of THIS control reserves the check mark's width, hidden
+   on the one not in use, and the weight never changes: the divider and the control's width stay where they are when the source changes. A held-out refit fades the whole control and
+   marks nothing (`.miniseg.disabled`). */
+.model-seg button::before {
+  content: "\2713\00a0";
+  visibility: hidden;
+}
+.model-seg button.is-resolved {
+  background: var(--navy);
+  color: var(--on-navy);
+}
+.model-seg button.is-resolved::before {
+  visibility: visible;
+}
+/* "auto" beside the control while nothing is pressed; its place (and the line's start) is kept when it is not shown. The ink, not the muted grey (3.5 : 1 on the card). */
+.model-auto {
+  padding: 1px 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 10.5px;
+  visibility: hidden;
+}
+.model-row.is-auto-mode .model-auto {
+  visibility: visible;
+}
+.model-head {
+  font-weight: 700;
+}
+/* WP-155: the trace's model chip (summary bar, `data-model-source` = pretrained | fit | refit) wears the same emphasis: the primary fill, its ink, the check mark - "which model answered"
+   is the first thing the chip says (the app's selected chip, `.chip.on`, is the same fill) */
+.chip[data-model-source] {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: var(--on-navy);
+  font-weight: 600;
+}
+.chip[data-model-source]::before {
+  content: "\2713";
+}
+.trace-loading-time.has-estimate {
+  min-width: 12.5rem; /* "123.4 s of about 100 s (estimate)" (186 px at 16 px) and the Turkish "123,4 sn / yaklaşık 100 sn (tahmin)" (196 px): the strip's (i) keeps its place while the digits change (WP-153: the word "estimate" made the text 60 px wider than the 8.5 rem it had reserved) */
+}
+.model-large {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem 0.75rem;
+  margin: 0.5rem 0; /* the Parameters panel above and the summary bar below stand flush against each other: the notice must not touch the panel */
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+}
+/* WP-146 / WP-147: the notice's primary button needs no rule of its own - `.btn-primary` reads --on-navy (app.css), dark ink on the dark theme's periwinkle (7.18 : 1) */
+.model-large[hidden] {
+  display: none;
+}
+.model-large p {
+  margin: 0;
+}
+.model-large-text {
+  flex: 1 1 22rem;
+}
+.model-large-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.model-large-cmd {
+  flex: 1 1 100%;
+  font-size: 0.75rem;
+}
+.model-large-cmd[hidden] {
+  display: none;
+}
+.model-large-cmd code {
+  font-family: var(--mono);
+  user-select: all; /* one click selects the whole command */
+}
+
+/* -- WP-244: the feature page's "Side inputs" tab (components/side-inputs-panel.js) ------------------------------------------------------------------------------------------------------
+   The sub-matrix panel's second tab on that page (its body lies over the matrix body like the other second tabs'; the list of bodies above gives it the position). Two columns like the diagram -
+   the user's side at the left, the film's at the right - of small cards: the count of non-zero terms, the five heaviest terms with their weights, the raw and standardised numbers. A card wears
+   its role colour at the left edge (the users' red, the films' blue) and is outlined when the step lights its box in the diagram. The text is --strong / --ink (never the muted grey: 3.5 : 1);
+   the body scrolls inside when a short window cannot hold the cards. */
+/* WP-248: the Values tab's body (`.values-body`) shares this frame */
+.layout-f .area-heat .side-body,
+.layout-f .area-heat .values-body {
+  position: absolute;
+  top: 40px; /* the tab strip's fixed height */
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 5px 12px 5px;
+  overflow: auto;
+  background: var(--card);
+  border-radius: 0 0 var(--r-lg) var(--r-lg);
+  font-size: 11.5px;
+  line-height: 1.25;
+}
+.layout-f .area-heat .side-body[hidden],
+.layout-f .area-heat .values-body[hidden] {
+  display: none; /* the rule above's list sets `display: flex` (it would win over the UA's [hidden]) */
+}
+.side-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-flow: row dense;
+  gap: 6px 12px;
+  align-items: start;
+}
+.side-card {
+  min-width: 0;
+  padding: 3px 8px 4px;
+  border: 1px solid var(--line);
+  border-left-width: 3px;
+  border-radius: 6px;
+  background: var(--card);
+}
+.side-card.role-user {
+  grid-column: 1;
+  border-left-color: var(--c-user);
+}
+.side-card.role-item {
+  grid-column: 2;
+  border-left-color: var(--c-item);
+}
+.side-card.hl-active {
+  outline: 2px solid var(--navy);
+  outline-offset: 1px;
+}
+.side-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 1px;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.side-nz {
+  flex: none;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  cursor: help;
+}
+.side-card.role-user .side-title {
+  color: color-mix(in srgb, var(--c-user) 60%, var(--ink));
+}
+.side-card.role-item .side-title {
+  color: var(--c-item-ink);
+}
+.side-count,
+.side-sub {
+  margin: 0;
+  color: var(--strong);
+}
+.side-terms {
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.side-terms li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.side-term {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.side-weight,
+.side-raw,
+.side-z {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.side-weight {
+  flex: none;
+}
+.side-numbers {
+  width: 100%;
+  margin-top: 2px;
+  border-collapse: collapse;
+}
+.side-numbers th,
+.side-numbers td {
+  padding: 1px 0 1px 8px;
+  font-weight: 400;
+  color: var(--ink);
+}
+.side-numbers th.side-name {
+  padding-left: 0;
+  text-align: left;
+}
+.side-numbers th.side-col {
+  color: var(--strong);
+  font-size: 11px;
+  text-align: right;
+}
+
+/* -- WP-248: the feature page's "Values" tab (components/values-panel.js) ---------------------------------------------------------------------------------------------------------------
+   The sub-matrix panel's third tab: its body shares the Side inputs body's frame (the rule above lists both). One row per stage of the diagram, in the order of the walk: the name (the user's stages wear
+   the users' red at the left edge, the film's the films' blue, the joined ones none), how many numbers it holds, its first six numbers in fixed-width columns (so the same position of every row stands in
+   the same x), the rest as "+26", and the same six as small bars. The step's stage is outlined and tinted (`hl-active`, the diagram's frame), the stages that feed it only tinted (`hl-in`). Text is --ink /
+   --strong, never the muted grey; the body scrolls inside when a short window cannot hold the rows (the lit row is kept in view). */
+.values-note-line {
+  margin: 0 0 3px;
+  color: var(--strong);
+}
+.values-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  font-variant-numeric: tabular-nums;
+}
+.values-table th,
+.values-table td {
+  padding: 2px 6px;
+  font-weight: 400;
+  color: var(--ink);
+  white-space: nowrap;
+  border-bottom: 1px solid var(--line);
+}
+.values-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding-top: 1px;
+  padding-bottom: 2px;
+  background: var(--card);
+  color: var(--strong);
+  font-size: 11px;
+  text-align: left;
+}
+.values-table .values-name {
+  width: 30%;
+  padding-left: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+  border-left: 3px solid transparent;
+}
+.values-table tbody .values-name {
+  font-weight: 600;
+}
+.values-row.side-user .values-name {
+  border-left-color: var(--c-user);
+}
+.values-row.side-item .values-name {
+  border-left-color: var(--c-item);
+}
+.values-act {
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--strong);
+}
+.values-table .values-n {
+  width: 12%;
+  text-align: right;
+}
+.values-table .values-nums {
+  width: 44%;
+  overflow: hidden;
+  text-align: left;
+}
+.values-v {
+  display: inline-block;
+  width: 3.9em;
+  text-align: right;
+}
+.values-v.zero {
+  color: var(--strong);
+}
+.values-more {
+  display: inline-block;
+  margin-left: 6px;
+  color: var(--strong);
+}
+.values-note {
+  margin-left: 8px;
+  color: var(--strong);
+}
+.values-composition {
+  color: var(--strong);
+}
+.values-table .values-bars {
+  width: 14%;
+  padding-right: 8px;
+  text-align: right;
+}
+.values-bars-svg {
+  display: block;
+  margin-left: auto;
+  overflow: visible;
+}
+.values-row.hl-in > * {
+  background: color-mix(in srgb, var(--navy) 9%, var(--card));
+}
+.values-row.hl-active > * {
+  background: color-mix(in srgb, var(--navy) 16%, var(--card));
+  border-top: 2px solid var(--navy);
+  border-bottom: 2px solid var(--navy);
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.values-row.hl-active > *:first-child {
+  border-left: 3px solid var(--navy);
+}
+.values-row.hl-active > *:last-child {
+  border-right: 2px solid var(--navy);
+}
